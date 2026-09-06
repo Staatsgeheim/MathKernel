@@ -240,6 +240,13 @@ public input.
 ## Installation
 
 ```bash
+pip install mathkernel           # Python mathematical core
+pip install 'mathkernel[mcp]'    # add the optional MCP transport
+```
+
+From a source checkout:
+
+```bash
 python -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -e .           # Python mathematical core

@@ -57,4 +57,4 @@ jobs:
         run: |
           python -m venv /tmp/mathkernel-wheel
           /tmp/mathkernel-wheel/bin/pip install dist/*.whl
-          /tmp/mathkernel-wheel/bin/python -c "from importlib.resources import files; from mathkernel import MathKernel, __version__; from importlib.metadata import version; assert MathKernel().capabilities()['version'] == __version__ == version('mathkernel-mcp'); assert files('mathkernel_viz').joinpath('assets/viewer.js').is_file(); assert files('mathkernel_multimodal').joinpath('assets/multimodal.js').is_file()"
+          /tmp/mathkernel-wheel/bin/python -c "from importlib.resources import files; from mathkernel import MathKernel, __version__; from importlib.metadata import version; assert MathKernel().capabilities()['version'] == __version__ == version('mathkernel'); assert files('mathkernel_viz').joinpath('assets/viewer.js').is_file(); assert files('mathkernel_multimodal').joinpath('assets/multimodal.js').is_file()"

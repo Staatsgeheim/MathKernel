@@ -52,7 +52,7 @@ numpy.
 CuPy wheels ship **no CUDA libraries**. A working GPU stack needs
 `cupy-cuda12x` **plus** the `nvidia-*-cu12` pip packages (runtime, cublas,
 cufft, curand, cusolver, cusparse, nvrtc, nvjitlink) — all installed by
-`pip install 'mathkernel-mcp[cuda]'`. A system CUDA toolkit only helps if
+`pip install 'mathkernel[cuda]'`. A system CUDA toolkit only helps if
 its major version matches (CUDA 12.x for cupy-cuda12x) and it actually
 contains `bin/` DLLs.
 

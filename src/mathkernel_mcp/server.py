@@ -1515,7 +1515,7 @@ else:
 def main() -> None:
     """Console entry point with an actionable optional-transport error."""
     if mcp is None:
-        raise SystemExit("FastMCP is not installed. Install the transport with: pip install 'mathkernel-mcp[mcp]' (or pip install -e '.[mcp]' from source).")
+        raise SystemExit("FastMCP is not installed. Install the transport with: pip install 'mathkernel[mcp]' (or pip install -e '.[mcp]' from source).")
     from mathkernel.lean_bootstrap import ensure_lean_toolchain, resolve_lean_toolchain, skip_install
     if resolve_lean_toolchain() is None and not skip_install():
         ensure_lean_toolchain()
