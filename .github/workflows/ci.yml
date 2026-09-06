@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    env:
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      MATHKERNEL_SKIP_LEAN_INSTALL: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install ".[mcp,dev,perf,latex,viz,sci,conic,certified]"
+      - name: Run test suite
+        run: python -m pytest -q
+
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Build and inspect distributions
+        run: |
+          python -m pip install --upgrade pip build twine
+          python -m build
+          python -m twine check dist/*
+      - name: Smoke-test wheel
+        env:
+          MATHKERNEL_SKIP_LEAN_INSTALL: "0"
+        run: |
+          python -m venv /tmp/mathkernel-wheel
+          /tmp/mathkernel-wheel/bin/pip install dist/*.whl
+          /tmp/mathkernel-wheel/bin/python -c "from importlib.resources import files; from mathkernel import MathKernel, __version__; from importlib.metadata import version; assert MathKernel().capabilities()['version'] == __version__ == version('mathkernel-mcp'); assert files('mathkernel_viz').joinpath('assets/viewer.js').is_file(); assert files('mathkernel_multimodal').joinpath('assets/multimodal.js').is_file()"

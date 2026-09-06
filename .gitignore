@@ -1,0 +1,53 @@
+# Python bytecode and tool caches
+__pycache__/
+*.py[cod]
+*.nbc
+*.nbi
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Local environments and dependency targets
+.venv/
+venv/
+.test-deps*/
+
+# Packaging output
+build/
+dist/
+*.egg-info/
+
+# Local runtime state
+*.sqlite
+*.sqlite3
+*.db
+
+# Editors and operating systems
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+.cursor/
+.tmp_mcp_viz_sonify/
+
+# Not for public release
+benchmarks/
+docs/
+experiments/
+grounding-examples/
+scripts/
+validation/
+tests/test_xorshift_families.py.disabled
+tests/test_companion.py
+scratch_readme_blocks/
+
+MathKernel.zip
+MathKernel_Remote_Compute_Technical_Design.html
+MathKernel_Remote_Compute_Technical_Design.md
+multimodal_demo.html
+README.html
+README.md.pdf
+viz_building_blocks_demo.html
+Implementation_Handover.md

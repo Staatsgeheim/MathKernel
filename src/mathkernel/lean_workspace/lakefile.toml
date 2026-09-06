@@ -1,0 +1,11 @@
+name = "mathkernel_lean"
+version = "1.3.0"
+defaultTargets = ["MathkernelLean"]
+
+[[lean_lib]]
+name = "MathkernelLean"
+
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
+rev = "v4.33.0"
