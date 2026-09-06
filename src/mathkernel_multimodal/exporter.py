@@ -158,12 +158,13 @@ def render_html(artifact: MathKernelArtifact, *, mode: str = "portable",
                                         "multimodal.js") + "\n</script>"
 
     tabs = "".join(
-        f'<button data-tab="{tid}"{" class=\"mkm-active\"" if i == 0 else ""}>'
-        f"{label}</button>"
-        for i, (tid, label) in enumerate(_TABS))
+        f'<button data-tab="{tid}"{active}>{label}</button>'
+        for i, (tid, label) in enumerate(_TABS)
+        for active in (' class="mkm-active"' if i == 0 else "",))
     panes = "".join(
-        f'<div id="{tid}" class="mkm-pane"{"" if i == 0 else " style=\"display:none\""}></div>'
-        for i, (tid, _) in enumerate(_TABS))
+        f'<div id="{tid}" class="mkm-pane"{hidden}></div>'
+        for i, (tid, _) in enumerate(_TABS)
+        for hidden in ("" if i == 0 else ' style="display:none"',))
 
     return f"""<!DOCTYPE html>
 <html lang="en">

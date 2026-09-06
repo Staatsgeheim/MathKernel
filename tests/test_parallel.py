@@ -17,7 +17,10 @@ from mathkernel.parallel import process_map, resolve_workers, thread_map
 
 from mathkernel.cuboid import scan_leg_pairs
 
-from cuboid_attack import find_bricks, is_square
+try:
+    from cuboid_attack import find_bricks, is_square
+except ImportError:  # scripts/ is not in the public tree
+    find_bricks = is_square = None
 
 
 def test_resolve_workers_defaults_to_cpu_count():
@@ -105,6 +108,7 @@ def test_scan_leg_pairs_small_bound():
     assert pairs[3] == (4,)  # 3-4-5
 
 
+@pytest.mark.skipif(find_bricks is None, reason="cuboid_attack is not in the public tree")
 def test_find_bricks_recovers_smallest_euler_brick():
     pairs = scan_leg_pairs(1, 241, 240)
     bricks = find_bricks(pairs)
