@@ -1,5 +1,20 @@
+import { randomId } from '../security/identity';
 import { z } from 'zod';
 import { CONTROL_BYTES, parseJson } from '../security/json';
+import { DOCUMENT_BYTES } from '../security/json';
+import {
+  validationSchema,
+  planSchema,
+  challengeSchema,
+  approvalSchema,
+  submissionSchema,
+  runSchema,
+  runsSchema,
+  objectsSchema,
+  subworkflowSchema,
+  type Frozen,
+} from './workflow';
+import type { StudioDocument } from '../editor/document';
 import {
   catalogSchema,
   envelopeSchema,
@@ -56,7 +71,7 @@ export class HostCommandService {
   private abort = new AbortController();
   private scope: Scope | null = null;
   private handshakeValue: Handshake | null = null;
-  constructor(private fetcher: typeof fetch = fetch) {}
+  constructor(private fetcher: typeof fetch = (input, init) => fetch(input, init)) {}
   disconnect(): void {
     this.generation++;
     this.abort.abort();
@@ -67,16 +82,24 @@ export class HostCommandService {
   private async get<T>(
     path: string,
     schema: z.ZodType<T>,
+    action?: { body: unknown; requestId?: string },
   ): Promise<{ payload: T; observed_at: string }> {
     const generation = this.generation,
-      requestId = crypto.randomUUID();
+      requestId = action?.requestId ?? randomId();
+    const body = action ? JSON.stringify(action.body) : undefined;
+    if (body && new TextEncoder().encode(body).length > DOCUMENT_BYTES + 8192)
+      throw new HostError('Command exceeds the document budget.');
     const response = await this.fetcher(`/studio/api/${path}`, {
-      method: 'GET',
+      method: action ? 'POST' : 'GET',
+      body,
       credentials: 'same-origin',
       cache: 'no-store',
       redirect: 'error',
       signal: AbortSignal.any([this.abort.signal, AbortSignal.timeout(15000)]),
-      headers: { 'X-Studio-Request': requestId },
+      headers: {
+        'X-Studio-Request': requestId,
+        ...(action ? { 'Content-Type': 'application/json', 'X-Studio-Action': path } : {}),
+      },
     });
     if (generation !== this.generation) throw new HostError('Stale host response discarded.');
     if (!response.ok) {
@@ -186,5 +209,122 @@ export class HostCommandService {
     )
       throw new HostError('Result page identity/offset mismatch.');
     return payload;
+  }
+  async resultAdmission(ref: string): Promise<ResultObservation> {
+    if (!this.handshakeValue?.features.result_inspect || !this.scope)
+      throw new HostError('Result inspection unavailable.');
+    const { payload, observed_at } = await this.get(
+      `results/${encodeURIComponent(ref)}/admission`,
+      resultSchema,
+    );
+    if (payload.binding.result_ref !== ref) throw new HostError('Admission reference mismatch.');
+    return { ...payload, observed_at, scope: { ...this.scope } };
+  }
+  async revokeSession() {
+    const response = await this.fetcher('/studio/api/session/disconnect', {
+      method: 'POST',
+      credentials: 'same-origin',
+      cache: 'no-store',
+      redirect: 'error',
+      headers: { 'X-Studio-Action': 'disconnect' },
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!response.ok) throw new HostError('Session revocation was not confirmed.', response.status);
+    this.disconnect();
+  }
+  private requireWorkflow(feature: keyof Handshake['features']) {
+    if (
+      !this.handshakeValue?.features[feature] ||
+      this.handshakeValue.extensions?.contract !== 'studio-workflow/1'
+    )
+      throw new HostError('A compatible host service is unavailable.');
+  }
+  async validate(document: StudioDocument, binding: Frozen) {
+    this.requireWorkflow('workflow_validate');
+    return (await this.get('workflow/validate', validationSchema, { body: { document, binding } }))
+      .payload;
+  }
+  async plan(validation_ref: string, binding: Frozen, scope: string, selected_nodes: string[]) {
+    this.requireWorkflow('workflow_execute');
+    return (
+      await this.get('workflow/plan', planSchema, {
+        body: { validation_ref, binding, scope, selected_nodes },
+      })
+    ).payload;
+  }
+  async challenge(plan_ref: string, plan_digest: string) {
+    this.requireWorkflow('approval_interact');
+    return (
+      await this.get('approval/challenge', challengeSchema, { body: { plan_ref, plan_digest } })
+    ).payload;
+  }
+  async confirm(
+    challenge_ref: string,
+    plan_ref: string,
+    plan_digest: string,
+    decision: 'approve' | 'deny',
+  ) {
+    this.requireWorkflow('approval_interact');
+    return (
+      await this.get('approval/confirm', approvalSchema, {
+        body: { challenge_ref, plan_ref, plan_digest, decision },
+      })
+    ).payload;
+  }
+  async submit(
+    plan_ref: string,
+    plan_digest: string,
+    authority_ref: string | null,
+    client_request_id: string,
+  ) {
+    this.requireWorkflow('workflow_execute');
+    return (
+      await this.get('workflow/submit', submissionSchema, {
+        body: { plan_ref, plan_digest, authority_ref, client_request_id },
+        requestId: client_request_id,
+      })
+    ).payload;
+  }
+  async reconcile(client_request_id: string) {
+    this.requireWorkflow('run_observe');
+    return (await this.get(`requests/${encodeURIComponent(client_request_id)}`, submissionSchema))
+      .payload;
+  }
+  async run(ref: string) {
+    this.requireWorkflow('run_observe');
+    const value = (await this.get(`runs/${encodeURIComponent(ref)}`, runSchema)).payload;
+    if (value.run_ref !== ref) throw new HostError('Run reference mismatch.');
+    return value;
+  }
+  async runs(offset = 0) {
+    this.requireWorkflow('run_observe');
+    return (await this.get(`runs?offset=${offset}`, runsSchema)).payload;
+  }
+  async runAction(
+    run_ref: string,
+    revision: number,
+    action: 'cancel' | 'retry' | 'reverify' | 'resume',
+    client_request_id: string,
+  ) {
+    this.requireWorkflow('run_observe');
+    return (
+      await this.get('runs/action', submissionSchema, {
+        body: { run_ref, revision, action, client_request_id },
+        requestId: client_request_id,
+      })
+    ).payload;
+  }
+  async objects(offset = 0) {
+    if (!this.handshakeValue?.extensions?.objects)
+      throw new HostError('Object listing unavailable.');
+    return (await this.get(`objects?offset=${offset}`, objectsSchema)).payload;
+  }
+  async subworkflow(ref: string) {
+    if (!this.handshakeValue?.extensions?.subworkflows)
+      throw new HostError('Subworkflow navigation unavailable.');
+    const value = (await this.get(`subworkflows/${encodeURIComponent(ref)}`, subworkflowSchema))
+      .payload;
+    if (value.reference !== ref) throw new HostError('Subworkflow reference mismatch.');
+    return value;
   }
 }

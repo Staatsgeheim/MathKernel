@@ -1,6 +1,6 @@
 {
   "name": "@mathkernel/studio",
-  "version": "0.1.0-alpha.1",
+  "version": "0.2.0-alpha.1",
   "private": true,
   "type": "module",
   "license": "MIT",
@@ -8,12 +8,13 @@
     "node": ">=22.12.0"
   },
   "scripts": {
-    "build": "tsc --noEmit && vite build && node scripts/manifest.mjs",
+    "dev": "vite --config vite.qa.config.ts",
+    "build": "tsc --noEmit && vite build && vite build --config vite.viewer.config.ts && node scripts/manifest.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "licenses": "node scripts/manifest.mjs",
-    "format": "prettier --write src tests scripts vite.config.ts",
-    "format:check": "prettier --check src tests scripts vite.config.ts"
+    "format": "prettier --write src tests scripts vite*.config.ts",
+    "format:check": "prettier --check src tests scripts vite*.config.ts"
   },
   "dependencies": {
     "@xyflow/react": "12.8.5",

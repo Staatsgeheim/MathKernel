@@ -8,21 +8,27 @@ import json
 from pathlib import Path
 import re
 import secrets
+import hashlib
 import time
 from urllib.parse import parse_qs, unquote, urlsplit
 from .source import PROTOCOL, check_id
+from .services import ACTION_FIELDS, ACTION_FEATURES, SessionScope, parse_command
 
 CSP = "; ".join(("default-src 'none'", "script-src 'self'", "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data:", "font-src 'self'", "connect-src 'self'", "worker-src 'self'",
-    "object-src 'none'", "base-uri 'none'", "frame-ancestors 'none'", "form-action 'self'"))
+    "object-src 'none'", "base-uri 'none'", "frame-ancestors 'none'", "frame-src 'self'", "form-action 'self'"))
 ASSETS = Path(__file__).parent / "assets"
+VIEWER_CSP = (ASSETS / "viewer-csp.txt").read_text(encoding="ascii")
 
 
 class StudioServer(HTTPServer):
     allow_reuse_address = True
 
-    def __init__(self, source, port=8765, assets=ASSETS):
+    def __init__(self, source, port=8765, assets=ASSETS, service=None):
         self.source = source
+        self.service = service
+        self.rate_window = time.monotonic()
+        self.rate_count = 0
         self.assets = Path(assets).resolve()
         self.connect_code = secrets.token_urlsafe(24)
         self.code_expires = time.monotonic() + 600
@@ -51,12 +57,13 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(status)
         self.send_header("Content-Type", media)
         self.send_header("Content-Length", str(len(payload)))
-        self.send_header("Content-Security-Policy", CSP)
+        isolated = self.path == '/studio/viewer.html'
+        self.send_header("Content-Security-Policy", VIEWER_CSP if isolated else CSP)
         self.send_header("Cache-Control", "no-store")
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Referrer-Policy", "no-referrer")
         self.send_header("Cross-Origin-Resource-Policy", "same-origin")
-        self.send_header("X-Frame-Options", "DENY")
+        self.send_header("X-Frame-Options", "SAMEORIGIN" if isolated else "DENY")
         self.send_header("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
         if cookie:
             self.send_header("Set-Cookie", cookie)
@@ -88,6 +95,20 @@ class Handler(BaseHTTPRequestHandler):
         except Exception:
             return False
 
+    def service_scope(self):
+        return SessionScope(self.server.source.host_id, self.server.source.workspace_id,
+            hashlib.sha256(self.server.session.encode()).hexdigest())
+
+    def rate_ok(self):
+        now = time.monotonic()
+        if now - self.server.rate_window >= 10:
+            self.server.rate_window, self.server.rate_count = now, 0
+        self.server.rate_count += 1
+        if self.server.rate_count > 120:
+            self.error(429, 'request_rate_limit')
+            return False
+        return True
+
     def envelope(self, payload):
         request_id = self.headers.get("X-Studio-Request", "")
         try:
@@ -108,6 +129,35 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         if not self.origin_ok(mutation=True):
             self.error(403, "origin_rejected")
+            return
+        if not self.rate_ok(): return
+        if self.path == '/studio/api/session/disconnect':
+            if not self.authenticated() or self.headers.get('X-Studio-Action') != 'disconnect':
+                self.error(403, 'session_required'); return
+            self.server.session = None
+            self.respond(200, b'{"disconnected":true}', cookie='mkstudio_session=; HttpOnly; SameSite=Strict; Path=/studio/; Max-Age=0')
+            return
+        action = self.path.removeprefix('/studio/api/')
+        if self.server.service is not None and action in ACTION_FIELDS:
+            if not self.authenticated(): self.error(401, 'session_required'); return
+            if not self.server.service.capabilities()['features'].get(ACTION_FEATURES[action], False):
+                self.error(403, 'feature_unavailable'); return
+            if self.headers.get('Content-Type') != 'application/json' or self.headers.get('X-Studio-Action') != action:
+                self.error(415, 'invalid_command_request'); return
+            lengths = self.headers.get_all('Content-Length') or []
+            if len(lengths) != 1 or not re.fullmatch(r'[0-9]{1,8}', lengths[0]) or self.headers.get('Transfer-Encoding'):
+                self.error(400, 'invalid_length'); return
+            length = int(lengths[0])
+            if not 0 < length <= 10 * 1024 * 1024 + 8192: self.error(413, 'command_budget'); return
+            try:
+                request_id = check_id(self.headers.get('X-Studio-Request', ''))
+                payload = parse_command(self.rfile.read(length), action)
+                if 'client_request_id' in payload and payload['client_request_id'] != request_id: raise ValueError('Correlation mismatch')
+                self.envelope(self.server.service.command(action, payload, request_id, self.service_scope()))
+            except PermissionError: self.error(403, 'service_permission_denied')
+            except KeyError: self.error(404, 'unavailable_or_expired')
+            except (ValueError, TypeError, RecursionError): self.error(400, 'invalid_command_or_contract')
+            except Exception: self.error(500, 'command_outcome_unknown')
             return
         if self.path != "/studio/api/session":
             self.error(405, "read_only_host")
@@ -142,7 +192,10 @@ class Handler(BaseHTTPRequestHandler):
         self.respond(200, b'{"connected":true}', cookie=f"mkstudio_session={self.server.session}; HttpOnly; SameSite=Strict; Path=/studio/; Max-Age=3600")
 
     def do_GET(self):
-        if not self.origin_ok():
+        # Only immutable public viewer assets are readable by the opaque frame.
+        viewer_asset = self.path in {'/studio/viewer.css', '/studio/viewer/viewer.js'}
+        opaque_asset = viewer_asset and self.headers.get_all('Host') == [self.server.authority] and (self.headers.get_all('Origin') or []) in ([], ['null'])
+        if not self.origin_ok() and not opaque_asset:
             self.error(403, "origin_rejected")
             return
         parts = urlsplit(self.path)
@@ -154,6 +207,7 @@ class Handler(BaseHTTPRequestHandler):
             if not self.authenticated():
                 self.error(401, "session_required")
                 return
+            if not self.rate_ok(): return
             try:
                 query = parse_qs(parts.query, strict_parsing=True)
                 if set(query) - {"offset"} or any(len(v) != 1 for v in query.values()):
@@ -163,12 +217,24 @@ class Handler(BaseHTTPRequestHandler):
                     raise ValueError()
                 offset = int(raw_offset)
                 source = self.server.source
-                if path == "/studio/api/handshake": payload = source.handshake()
+                if path == "/studio/api/handshake":
+                    payload = source.handshake()
+                    if self.server.service is not None:
+                        extension = self.server.service.capabilities()
+                        payload['features'] = {**payload['features'], **extension['features']}
+                        payload['extensions'] = extension['extensions']
                 elif path == "/studio/api/catalog": payload = source.catalog(offset)
                 elif path == "/studio/api/results": payload = source.results(offset)
-                elif match := re.fullmatch(r"/studio/api/results/([A-Za-z0-9_.:-]{1,128})(/page)?", path):
+                elif match := re.fullmatch(r"/studio/api/results/([A-Za-z0-9_.:-]{1,128})(/page|/admission)?", path):
                     ref = check_id(match[1])
-                    payload = source.result_page(ref, offset) if match[2] else source.result(ref)
+                    if match[2] == '/admission':
+                        if not hasattr(source, 'result_admission'): raise KeyError('Admission snapshot unavailable')
+                        payload = source.result_admission(ref)
+                    else: payload = source.result_page(ref, offset) if match[2] else source.result(ref)
+                elif self.server.service is not None and (match := re.fullmatch(r'/studio/api/(runs|requests|objects|subworkflows)(?:/([A-Za-z0-9_.:-]{1,128}))?', path)):
+                    kind, ref = match[1], match[2]
+                    if ref: check_id(ref)
+                    payload = self.server.service.read(kind, ref, offset, self.service_scope())
                 else:
                     self.error(404, "unsupported_route")
                     return
@@ -180,6 +246,8 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path in {"/studio", "/studio/"}:
             target = self.server.assets / "index.html"
+        elif path in {'/studio/viewer.html', '/studio/viewer.css', '/studio/viewer/viewer.js'}:
+            target = self.server.assets / path.removeprefix('/studio/')
         elif path.startswith("/studio/assets/"):
             target = (self.server.assets / path.removeprefix("/studio/")).resolve()
             if not target.is_relative_to(self.server.assets):
@@ -203,6 +271,8 @@ def main():
     parser.add_argument("--host-id", default=None, help="Stable operator-chosen identity, or a fresh identity per launch")
     parser.add_argument("--workspace-id", default="local")
     parser.add_argument("--test-host", action="store_true", help="Synthetic contract host; does not compute mathematics")
+    parser.add_argument('--test-workflow', action='store_true', help='Enable synthetic workflow UI fixtures; requires --test-host')
+    parser.add_argument('--workflow-fault', choices=['none', 'submission_unknown', 'stale_plan', 'policy_denied'], default='none')
     from .testing import FAULTS, FixtureSource
     parser.add_argument("--fault", choices=FAULTS, default="none")
     args = parser.parse_args()
@@ -212,13 +282,19 @@ def main():
         parser.error("Port must be in 0–65535")
     if args.fault != "none" and not args.test_host:
         parser.error("--fault requires --test-host")
+    if args.test_workflow and not args.test_host:
+        parser.error('--test-workflow requires --test-host')
+    if args.workflow_fault != 'none' and not args.test_workflow:
+        parser.error('--workflow-fault requires --test-workflow')
     if args.test_host:
         source = FixtureSource(args.fault)
     else:
         from mathkernel import MathKernel
         from .source import KernelSource
         source = KernelSource(MathKernel(), host_id=args.host_id or "local-" + secrets.token_hex(12), workspace_id=args.workspace_id)
-    with StudioServer(source, args.port) as server:
+    from .workflow_testing import FixtureWorkflowService
+    service = FixtureWorkflowService(args.workflow_fault) if args.test_workflow else None
+    with StudioServer(source, args.port, service=service) as server:
         print(f"{'TEST HOST — synthetic fixtures. ' if source.test_host else ''}Open {server.origin}/studio/")
         print(f"One-time connection code (valid 10 minutes): {server.connect_code}")
         print("Loopback-only, read-only host; workflow execution unavailable. Ctrl+C to stop.")

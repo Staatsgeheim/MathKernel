@@ -1,4 +1,5 @@
 import hashlib
+import base64
 import http.client
 import json
 from pathlib import Path
@@ -8,7 +9,7 @@ import threading
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
-from mathkernel_studio.server import ASSETS, StudioServer
+from mathkernel_studio.server import ASSETS, StudioServer, VIEWER_CSP
 from mathkernel_studio.testing import FixtureSource
 
 
@@ -31,6 +32,17 @@ class PackagingTests(unittest.TestCase):
             self.assertEqual(body.strip(),'');self.assertIn('src="/studio/assets/',attrs)
         self.assertNotIn('https://',html)
         self.assertTrue(ASSETS.joinpath('THIRD_PARTY_NOTICES.txt').is_file())
+
+    def test_isolated_viewer_is_single_file_and_bound_to_script_hash(self):
+        html=ASSETS.joinpath('viewer.html').read_text()
+        scripts=re.findall(r'<script>(.*?)</script>',html,re.S)
+        self.assertEqual(len(scripts),1)
+        digest=base64.b64encode(hashlib.sha256(scripts[0].encode()).digest()).decode()
+        self.assertIn(f"script-src 'sha256-{digest}'",VIEWER_CSP)
+        self.assertIn("connect-src 'none'",VIEWER_CSP)
+        self.assertNotIn('unsafe-eval',VIEWER_CSP)
+        self.assertNotIn('<script src=',html)
+        self.assertNotIn('<link rel="stylesheet"',html)
 
     def test_packaged_host_serves_real_assets_and_nested_shell_without_node(self):
         with StudioServer(FixtureSource(),port=0) as server:

@@ -1,3 +1,4 @@
+import { randomId } from '../security/identity';
 import type { StudioDocument } from './document';
 import { DOCUMENT_BYTES } from '../security/json';
 export function readDocument(file: File, signal?: AbortSignal): Promise<StudioDocument> {
@@ -8,7 +9,7 @@ export function readDocument(file: File, signal?: AbortSignal): Promise<StudioDo
     const worker = new Worker(new URL('../workers/import.worker.ts', import.meta.url), {
       type: 'module',
     });
-    const requestId = crypto.randomUUID();
+    const requestId = randomId();
     const cleanup = () => {
       clearTimeout(timer);
       worker.terminate();

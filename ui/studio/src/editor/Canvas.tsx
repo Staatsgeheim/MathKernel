@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ReactFlow,
   Background,
@@ -22,7 +22,7 @@ import { Text } from '../app/components';
 import '@xyflow/react/dist/style.css';
 
 type NodeData = { label: string; operation: string; state: string; ports: Port[]; summary: string };
-type FlowNode = Node<NodeData, 'studio'>;
+type FlowNode = Node<NodeData, 'studio' | 'frame'>;
 const StudioNode = memo(function StudioNode({ data, selected }: NodeProps<FlowNode>) {
   return (
     <article className={`studio-node ${selected ? 'is-selected' : ''}`}>
@@ -58,7 +58,19 @@ const StudioNode = memo(function StudioNode({ data, selected }: NodeProps<FlowNo
     </article>
   );
 });
-const nodeTypes = { studio: StudioNode };
+const FrameNode = memo(function FrameNode({ data }: NodeProps<FlowNode>) {
+  return (
+    <div className="visual-frame">
+      <strong>
+        <Text>{data.label}</Text>
+      </strong>
+      <small>
+        <Text>{data.summary}</Text>
+      </small>
+    </div>
+  );
+});
+const nodeTypes = { studio: StudioNode, frame: FrameNode };
 export function Canvas({
   document,
   catalog,
@@ -118,6 +130,58 @@ export function Canvas({
     [document, catalog, selected],
   );
   const [nodes, setNodes] = useState(model);
+  const frames = useMemo<FlowNode[]>(
+    () =>
+      document.presentation.groups
+        .filter((g) => g.members.length)
+        .map((g) => {
+          const points = g.members.map(
+            (id) => document.presentation.node_positions[id] ?? { x: 0, y: 0 },
+          );
+          const x = Math.min(...points.map((p) => p.x)) - 20,
+            y = Math.min(...points.map((p) => p.y)) - 65;
+          const crossing = document.authoring.edges.filter(
+            (e) => g.members.includes(e.source_node) !== g.members.includes(e.target_node),
+          ).length;
+          return {
+            id: `__frame__${g.id}`,
+            type: 'frame',
+            position: { x, y },
+            style: {
+              width: Math.max(...points.map((p) => p.x)) - x + 265,
+              height: Math.max(...points.map((p) => p.y)) - y + 220,
+              zIndex: -1,
+            },
+            zIndex: -1,
+            selectable: false,
+            draggable: false,
+            connectable: false,
+            focusable: false,
+            data: {
+              label: g.title,
+              summary: `${g.members.length} members · ${crossing} boundary connections · presentation only`,
+              operation: '',
+              state: '',
+              ports: [],
+            },
+          };
+        }),
+    [document],
+  );
+  const flowNodes = useMemo(() => [...frames, ...nodes], [frames, nodes]);
+  const selectionRef = useRef(selected);
+  selectionRef.current = selected;
+  const selectionChanged = useCallback(
+    ({ nodes }: { nodes: FlowNode[] }) => {
+      const ids = nodes.filter((n) => n.type !== 'frame').map((n) => n.id);
+      if (
+        ids.length !== selectionRef.current.length ||
+        ids.some((id) => !selectionRef.current.includes(id))
+      )
+        onSelect(ids);
+    },
+    [onSelect],
+  );
   const [flow, setFlow] = useState<ReactFlowInstance<FlowNode, Edge> | null>(null);
   useEffect(() => setNodes(model), [model]);
   const edges = useMemo<Edge[]>(
@@ -172,15 +236,12 @@ export function Canvas({
   return (
     <div className="canvas" aria-label="Authoring canvas; an equivalent outline view is available">
       <ReactFlow<FlowNode, Edge>
-        nodes={nodes}
+        nodes={flowNodes}
         edges={edges}
         nodeTypes={nodeTypes}
         onInit={setFlow}
         onNodesChange={onNodesChange}
-        onSelectionChange={({ nodes }) => {
-          const ids = nodes.map((n) => n.id);
-          if (ids.join() !== selected.join()) onSelect(ids);
-        }}
+        onSelectionChange={selectionChanged}
         onConnect={(c) => wire(c)}
         onReconnect={(old, c) => wire(c, old.id)}
         onNodeDragStop={(_, __, moved) =>

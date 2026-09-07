@@ -1,15 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Canvas } from '../editor/Canvas';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ConnectDialog } from '../editor/ConnectDialog';
-import {
-  diagnostics,
-  descriptor,
-  execute,
-  history,
-  redo,
-  undo,
-  type Command,
-} from '../editor/commands';
+import { descriptor, execute, history, redo, undo, type Command } from '../editor/commands';
 import {
   emptyDocument,
   makeInput,
@@ -34,10 +25,18 @@ import type { Handshake, Operation, ResultObservation } from '../host/contracts'
 import { ResultInspector } from '../evidence/ResultInspector';
 import { Dialog, Field, JsonView, Text, ViewBoundary } from './components';
 import { CONTROL_BYTES, parseJson } from '../security/json';
+import { useDiagnostics } from '../editor/useDiagnostics';
+import { CompositionPanel, insertionNotices } from '../editor/CompositionPanel';
+import { RecoveryBrowser } from '../editor/RecoveryBrowser';
+import { loadPreferences, savePreferences } from './preferences';
+import { loadCatalog, saveCatalog, clearCatalog } from '../editor/catalogCache';
+import { WorkflowPanel } from '../host/WorkflowPanel';
+import { ObjectPicker } from '../host/ObjectPicker';
 
 const client = new HostCommandService();
+const Canvas = lazy(() => import('../editor/Canvas').then((m) => ({ default: m.Canvas })));
 const NO_RUN =
-  'Workflow execution is unavailable in this Studio build. The host must supply validation, planning and execution contracts.';
+  'Workflow execution requires a compatible host providing validation, planning and execution. The bundled MathKernel host does not provide this service.';
 export function App() {
   const [state, setState] = useState(() => history(emptyDocument()));
   const [selected, setSelected] = useState<string[]>([]);
@@ -49,7 +48,7 @@ export function App() {
   );
   const [mode, setMode] = useState<'author' | 'inspect'>('author');
   const [message, setMessage] = useState(() =>
-    location.pathname === '/studio/' || location.pathname === '/studio'
+    ['/', '/studio/', '/studio'].includes(location.pathname)
       ? 'Authoring offline. No computation has been requested.'
       : 'This deep link cannot be resolved by this preview. No document or run was loaded. Use import or an explicit host result reference.',
   );
@@ -77,6 +76,26 @@ export function App() {
   const recoveryQueue = useRef(Promise.resolve());
   const [help, setHelp] = useState(false);
   const [pendingCheck, setPendingCheck] = useState(false);
+  const [composition, setComposition] = useState(false);
+  const [savedCopies, setSavedCopies] = useState<RecoveryEntry[] | null>(null);
+  const [preferences, setPreferences] = useState(loadPreferences);
+  const [settings, setSettings] = useState(false);
+  const [catalogNote, setCatalogNote] = useState('');
+  const [domain, setDomain] = useState('');
+  const [availability, setAvailability] = useState('');
+  const [catalogLimit, setCatalogLimit] = useState(100);
+  const [catalogReview, setCatalogReview] = useState<Operation | null>(null);
+  const [workflowOpen, setWorkflowOpen] = useState(false);
+  const [objectsOpen, setObjectsOpen] = useState(false);
+  useEffect(() => {
+    window.document.documentElement.dataset.theme = preferences.theme;
+    window.document.documentElement.style.fontSize = `${preferences.textSize}px`;
+    try {
+      savePreferences(preferences);
+    } catch {
+      setMessage('Preferences could not be saved in this browser.');
+    }
+  }, [preferences]);
   const stateRef = useRef(state);
   const commit = useCallback((next: typeof state) => {
     stateRef.current = next;
@@ -89,16 +108,19 @@ export function App() {
   const activeScope = useRef(scope);
   activeScope.current = scope;
   const activeNode = doc.authoring.nodes.find((n) => n.id === selected[0]);
-  const problems = useMemo(() => diagnostics(doc, catalog), [doc, catalog]);
+  const problems = useDiagnostics(doc, catalog);
   const matches = useMemo(() => {
     const term = query.toLocaleLowerCase();
-    return catalog.filter((o) =>
-      [o.title, o.operation_ref, o.domain, o.description, ...o.input_types, ...o.output_types]
-        .join(' ')
-        .toLocaleLowerCase()
-        .includes(term),
+    return catalog.filter(
+      (o) =>
+        (!domain || o.domain === domain) &&
+        (!availability || o.availability === availability) &&
+        [o.title, o.operation_ref, o.domain, o.description, ...o.input_types, ...o.output_types]
+          .join(' ')
+          .toLocaleLowerCase()
+          .includes(term),
     );
-  }, [catalog, query]);
+  }, [catalog, query, domain, availability]);
   const dispatch = useCallback(
     (command: Command): boolean => {
       try {
@@ -117,6 +139,7 @@ export function App() {
     client.disconnect();
     setHost(null);
     setCatalog([]);
+    setCatalogNote('');
     setObservations([]);
     setObservation(null);
     setResultOffset(0);
@@ -125,6 +148,11 @@ export function App() {
   }, []);
   function hostError(error: unknown) {
     if (error instanceof HostError && [401, 403].includes(error.status)) {
+      try {
+        clearCatalog();
+      } catch {
+        /* Storage policy may prohibit access. */
+      }
       clearHost();
       setMessage(
         'Session or permission lost. Private observations were cleared; draft intent is preserved.',
@@ -145,6 +173,7 @@ export function App() {
       const entries = h.features.catalog_read ? await client.catalog() : [];
       setHost(h);
       setCatalog(entries);
+      setCatalogNote(`Live catalog ${h.catalog_revision}`);
       setConnectionState(h.test_host ? 'TEST HOST' : 'Connected');
       setConnection(false);
       setMessage(`${entries.length} catalog entries loaded. ${NO_RUN}`);
@@ -156,7 +185,7 @@ export function App() {
       setBusy(false);
     }
   }
-  function addInput(kind: 'integer' | 'rational' | 'real') {
+  function addInput(kind: 'integer' | 'rational' | 'real' | 'matrix' | 'expression') {
     const n = makeInput(kind);
     if (
       dispatch({
@@ -339,7 +368,15 @@ export function App() {
     (e) => selected.includes(e.source_node) || selected.includes(e.target_node),
   ).length;
   return (
-    <div className="studio-app">
+    <div
+      className={`studio-app ${preferences.reducedMotion ? 'reduce-motion' : ''}`}
+      style={
+        {
+          '--palette-width': `${preferences.paletteWidth}px`,
+          '--inspector-width': `${preferences.inspectorWidth}px`,
+        } as React.CSSProperties
+      }
+    >
       <a className="skip-link" href="#workbench">
         Skip to workspace
       </a>
@@ -357,6 +394,8 @@ export function App() {
         </div>
         <div className="header-actions">
           <button onClick={() => setConnection(true)}>{connectionState}</button>
+          <button onClick={() => setComposition(true)}>Compose & compare</button>
+          <button onClick={() => setSettings(true)}>Preferences</button>
           <button onClick={() => setHelp(true)}>Help & capabilities</button>
         </div>
       </header>
@@ -388,18 +427,35 @@ export function App() {
           >
             Check draft
           </button>
-          <button disabled title={NO_RUN}>
+          <button
+            disabled={!host?.features.workflow_validate || !host.extensions}
+            title={NO_RUN}
+            onClick={() => setWorkflowOpen(true)}
+          >
             Validate with host
           </button>
-          <button disabled title={NO_RUN}>
+          <button
+            disabled={!host?.features.workflow_execute || !host.extensions}
+            title={NO_RUN}
+            onClick={() => setWorkflowOpen(true)}
+          >
             Plan
           </button>
-          <button disabled title={NO_RUN}>
+          <button
+            disabled={!host?.features.workflow_execute || !host.extensions}
+            title={NO_RUN}
+            onClick={() => setWorkflowOpen(true)}
+          >
             Run workflow
+          </button>
+          <button disabled={!host} onClick={() => setWorkflowOpen(true)}>
+            Plans & recorded runs
           </button>
         </div>
       </div>
-      <div className="workspace-grid">
+      <div
+        className={`workspace-grid ${!preferences.palette ? 'hide-palette' : ''} ${!preferences.inspector ? 'hide-inspector' : ''}`}
+      >
         <aside className="catalog-panel" aria-label="Operation palette">
           <header className="panel-header">
             <h2>Operations</h2>
@@ -420,8 +476,81 @@ export function App() {
               <button onClick={() => addInput('integer')}>ℤ Integer</button>
               <button onClick={() => addInput('rational')}>ℚ Rational</button>
               <button onClick={() => addInput('real')}>ℝ Numerical</button>
+              <button onClick={() => addInput('matrix')}>Matrix</button>
+              <button onClick={() => addInput('expression')}>Expression</button>
             </div>
           </section>
+          <details className="catalog-filters">
+            <summary>Catalog filters & snapshots</summary>
+            <label className="field">
+              Domain
+              <select value={domain} onChange={(e) => setDomain(e.target.value)}>
+                <option value="">All domains</option>
+                {[...new Set(catalog.map((o) => o.domain))].sort().map((d) => (
+                  <option key={d}>{d}</option>
+                ))}
+              </select>
+            </label>
+            <label className="field">
+              Availability
+              <select value={availability} onChange={(e) => setAvailability(e.target.value)}>
+                <option value="">All availability states</option>
+                {['available', 'unavailable', 'experimental', 'unknown'].map((v) => (
+                  <option key={v}>{v}</option>
+                ))}
+              </select>
+            </label>
+            <p className="muted">
+              <Text>{catalogNote}</Text>
+            </p>
+            <button
+              disabled={!host}
+              onClick={() => {
+                try {
+                  if (host) {
+                    saveCatalog({
+                      host: host.host_instance_id,
+                      workspace: host.workspace_id,
+                      revision: host.catalog_revision,
+                      savedAt: new Date().toISOString(),
+                      entries: catalog,
+                    });
+                    setMessage('Catalog snapshot retained in this browser by explicit request.');
+                  }
+                } catch (e) {
+                  setMessage(String(e));
+                }
+              }}
+            >
+              Keep catalog for offline use
+            </button>
+            <button
+              disabled={!!host}
+              onClick={() => {
+                try {
+                  const c = loadCatalog();
+                  if (c) {
+                    setCatalog(c.entries);
+                    setCatalogNote(
+                      `CACHED · ${c.host} / ${c.workspace} · ${c.savedAt}. Not current authority.`,
+                    );
+                  } else setMessage('No catalog snapshot saved.');
+                } catch (e) {
+                  setMessage(String(e));
+                }
+              }}
+            >
+              Open cached catalog
+            </button>
+            <button
+              onClick={() => {
+                clearCatalog();
+                setMessage('Saved catalog snapshot removed.');
+              }}
+            >
+              Forget cached catalog
+            </button>
+          </details>
           <div className="catalog-list">
             {!host && (
               <div className="empty-panel">
@@ -432,7 +561,7 @@ export function App() {
                 <button onClick={() => setConnection(true)}>Connect</button>
               </div>
             )}
-            {matches.slice(0, 150).map((op) => (
+            {matches.slice(0, catalogLimit).map((op) => (
               <article className="catalog-item" key={op.descriptor_id}>
                 <div>
                   <small>
@@ -445,17 +574,30 @@ export function App() {
                     {op.composition} · {op.availability}
                   </p>
                 </div>
-                <button aria-label={`Add ${op.title} to draft`} onClick={() => addOperation(op)}>
-                  Add
-                </button>
+                <div>
+                  <button
+                    aria-label={`Inspect ${op.title} documentation`}
+                    onClick={() => setCatalogReview(op)}
+                  >
+                    Details
+                  </button>
+                  <button aria-label={`Add ${op.title} to draft`} onClick={() => addOperation(op)}>
+                    Add
+                  </button>
+                </div>
               </article>
             ))}
-            {matches.length > 150 && (
-              <p className="notice">Showing 150 of {matches.length}. Refine your search.</p>
+            {matches.length > catalogLimit && (
+              <button onClick={() => setCatalogLimit((n) => n + 100)}>
+                Show next 100 ({catalogLimit} of {matches.length})
+              </button>
             )}
             {host && matches.length === 0 && <p className="empty-panel">No matching operations.</p>}
           </div>
           <footer className="catalog-footer">
+            <button disabled={!host} onClick={() => setObjectsOpen(true)}>
+              Objects & subworkflows
+            </button>
             <button
               onClick={() => {
                 setMode('inspect');
@@ -532,14 +674,18 @@ export function App() {
                 </button>
               </div>
               {view === 'canvas' && doc.authoring.nodes.length <= 200 ? (
-                <Canvas
-                  document={doc}
-                  catalog={catalog}
-                  selected={selected}
-                  onSelect={select}
-                  command={dispatch}
-                  connect={canvasConnect}
-                />
+                <Suspense fallback={<p>Loading canvas. The outline remains available.</p>}>
+                  <ViewBoundary key="canvas">
+                    <Canvas
+                      document={doc}
+                      catalog={catalog}
+                      selected={selected}
+                      onSelect={select}
+                      command={dispatch}
+                      connect={canvasConnect}
+                    />
+                  </ViewBoundary>
+                </Suspense>
               ) : (
                 <div className="outline">
                   <h2>Graph outline</h2>
@@ -551,7 +697,7 @@ export function App() {
                   {!doc.authoring.nodes.length && (
                     <p>Add an input or a catalog operation to begin.</p>
                   )}
-                  {doc.authoring.nodes.map((n) => (
+                  {doc.authoring.nodes.slice(0, catalogLimit).map((n) => (
                     <article
                       key={n.id}
                       className={`outline-node ${selected.includes(n.id) ? 'selected' : ''}`}
@@ -579,8 +725,11 @@ export function App() {
                       </span>
                     </article>
                   ))}
+                  {doc.authoring.nodes.length > catalogLimit && (
+                    <button onClick={() => setCatalogLimit((n) => n + 100)}>Show more nodes</button>
+                  )}
                   <h3>Connections</h3>
-                  {doc.authoring.edges.map((e) => (
+                  {doc.authoring.edges.slice(0, catalogLimit).map((e) => (
                     <div className="outline-edge" key={e.id}>
                       <span>
                         <Text>{`${doc.authoring.nodes.find((n) => n.id === e.source_node)?.label} [${e.source_port}] → ${doc.authoring.nodes.find((n) => n.id === e.target_node)?.label} [${e.target_port}]`}</Text>
@@ -721,7 +870,9 @@ export function App() {
           <div className="problem-list">
             {problems.slice(0, 100).map((p, i) => (
               <div key={`${p.code}-${i}`}>
-                <span className="badge">{p.layer}</span>
+                <span className="badge">
+                  {p.layer} · checked draft {p.revision}
+                </span>
                 <span>
                   <Text>{p.message}</Text>
                 </span>
@@ -750,6 +901,17 @@ export function App() {
             <Text>{recoveryStatus}</Text>
           </p>
           <div className="toolbar">
+            <button
+              onClick={async () => {
+                try {
+                  setSavedCopies(await listRecovery(hostId, workspaceId));
+                } catch (e) {
+                  setMessage(String(e));
+                }
+              }}
+            >
+              Browse saved drafts
+            </button>
             <button
               onClick={() => {
                 if (recoveryEnabled) {
@@ -780,6 +942,189 @@ export function App() {
           </div>
         </div>
       </footer>
+      {composition && (
+        <CompositionPanel
+          state={state}
+          selection={selected}
+          catalog={catalog}
+          command={dispatch}
+          onClose={() => setComposition(false)}
+        />
+      )}
+      {savedCopies && (
+        <RecoveryBrowser
+          current={doc}
+          entries={savedCopies}
+          onClose={() => setSavedCopies(null)}
+          onRestore={(d) => {
+            commit(history(d));
+            setSelected([]);
+            setSavedCopies(null);
+            setMode('author');
+            setRecoveryEnabled(false);
+            setMessage('Saved draft restored as authoring intent.');
+          }}
+        />
+      )}
+      {settings && (
+        <Dialog title="Presentation preferences" onClose={() => setSettings(false)}>
+          <label className="field">
+            Theme
+            <select
+              value={preferences.theme}
+              onChange={(e) =>
+                setPreferences({
+                  ...preferences,
+                  theme: e.target.value as typeof preferences.theme,
+                })
+              }
+            >
+              <option value="system">System</option>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+            </select>
+          </label>
+          <label className="field">
+            Text size
+            <select
+              value={preferences.textSize}
+              onChange={(e) => setPreferences({ ...preferences, textSize: Number(e.target.value) })}
+            >
+              {[16, 18, 20, 24].map((n) => (
+                <option key={n} value={n}>
+                  {n}px
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={preferences.palette}
+              onChange={(e) => setPreferences({ ...preferences, palette: e.target.checked })}
+            />
+            Show operation palette
+          </label>
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={preferences.inspector}
+              onChange={(e) => setPreferences({ ...preferences, inspector: e.target.checked })}
+            />
+            Show node inspector
+          </label>
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={preferences.reducedMotion}
+              onChange={(e) => setPreferences({ ...preferences, reducedMotion: e.target.checked })}
+            />
+            Reduce motion
+          </label>
+          <Field
+            label="Palette width (200–420 pixels)"
+            value={String(preferences.paletteWidth)}
+            onCommit={(v) => {
+              if (Number(v) >= 200 && Number(v) <= 420)
+                setPreferences({ ...preferences, paletteWidth: Number(v) });
+            }}
+          />
+          <Field
+            label="Inspector width (280–560 pixels)"
+            value={String(preferences.inspectorWidth)}
+            onCommit={(v) => {
+              if (Number(v) >= 280 && Number(v) <= 560)
+                setPreferences({ ...preferences, inspectorWidth: Number(v) });
+            }}
+          />
+          <p>
+            Mathematical text uses a decimal point and UTC timestamps. Display preferences never
+            alter input precision, authorize compute, or change engine settings.
+          </p>
+        </Dialog>
+      )}
+      {catalogReview && (
+        <Dialog
+          title="Operation documentation and schema review"
+          onClose={() => setCatalogReview(null)}
+        >
+          <h3>
+            <Text>{catalogReview.operation_ref}</Text>
+          </h3>
+          <p>
+            <Text>{catalogReview.description}</Text>
+          </p>
+          <p>
+            {catalogReview.availability} · {catalogReview.composition}
+          </p>
+          <p>
+            <Text>{catalogReview.coverage}</Text>
+          </p>
+          <JsonView
+            value={{
+              version: catalogReview.operation_version,
+              digest: catalogReview.schema_digest,
+              inputs: catalogReview.input_ports,
+              outputs: catalogReview.output_ports,
+              parameters: catalogReview.parameter_schema,
+              engines: catalogReview.engines,
+            }}
+          />
+          <button
+            onClick={() => {
+              addOperation(catalogReview);
+              setCatalogReview(null);
+            }}
+          >
+            Add to draft
+          </button>
+          {activeNode?.operation_ref === catalogReview.operation_ref &&
+            activeNode.schema_digest !== catalogReview.schema_digest && (
+              <section className="warning">
+                <p>
+                  Replacing the schema binding changes authoring semantics. Existing parameters and
+                  port IDs are retained and may require repair. No ports are matched by display
+                  name.
+                </p>
+                <JsonView
+                  value={{ previous: activeNode.schema_digest, next: catalogReview.schema_digest }}
+                />
+                <button
+                  onClick={() => {
+                    if (
+                      dispatch({ type: 'rebind', nodeId: activeNode.id, operation: catalogReview })
+                    )
+                      setCatalogReview(null);
+                  }}
+                >
+                  Use reviewed schema for selected node
+                </button>
+              </section>
+            )}
+        </Dialog>
+      )}
+      {objectsOpen && host && (
+        <ObjectPicker
+          key={`${host.host_instance_id}:${host.workspace_id}`}
+          client={client}
+          host={host}
+          node={activeNode}
+          command={dispatch}
+          onClose={() => setObjectsOpen(false)}
+          onHostError={hostError}
+        />
+      )}
+      {workflowOpen && host && (
+        <WorkflowPanel
+          key={`${host.host_instance_id}:${host.workspace_id}`}
+          document={doc}
+          selection={selected}
+          host={host}
+          client={client}
+          onClose={() => setWorkflowOpen(false)}
+          onHostError={hostError}
+        />
+      )}
       {connection && (
         <Dialog title="Connect to this local host" onClose={() => setConnection(false)}>
           <p>
@@ -813,6 +1158,27 @@ export function App() {
               >
                 Disconnect UI
               </button>
+              {host && (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={async () => {
+                    setBusy(true);
+                    try {
+                      await client.revokeSession();
+                      clearHost();
+                      setConnection(false);
+                      setMessage('Host session revoked. Draft intent is preserved.');
+                    } catch (e) {
+                      hostError(e);
+                    } finally {
+                      setBusy(false);
+                    }
+                  }}
+                >
+                  Revoke session
+                </button>
+              )}
               <button className="primary" disabled={busy}>
                 {busy ? 'Connecting…' : 'Connect'}
               </button>
@@ -884,7 +1250,22 @@ export function App() {
             }}
           />
           <div className="dialog-actions">
+            <JsonView
+              value={insertionNotices(importPreview, catalog)}
+              label="Fragment insertion review"
+            />
             <button onClick={exportDocument}>Export current draft</button>
+            <button
+              onClick={() => {
+                if (dispatch({ type: 'insert', document: importPreview })) {
+                  setImportPreview(null);
+                  setMode('author');
+                  setMessage('Fragment inserted with fresh IDs; external object bindings removed.');
+                }
+              }}
+            >
+              Insert as fragment
+            </button>
             <button
               className="primary"
               onClick={() => {
@@ -961,8 +1342,9 @@ export function App() {
           </p>
           <p>{NO_RUN}</p>
           <p>
-            Only structured text viewers are enabled. Active HTML, plots, audio, remote compute,
-            approvals and workflow execution remain unavailable.
+            Supported inline plots and point clouds use an isolated fixed viewer. Unsupported
+            artifact formats remain source text. Workflow and approval controls require a compatible
+            host; synthetic test fixtures are labelled.
           </p>
           <JsonView
             value={host ?? { connection: 'offline', authoring_draft: true }}

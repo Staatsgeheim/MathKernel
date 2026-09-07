@@ -1,6 +1,6 @@
 # Inert examples and fixtures
 
-These files are documentation fixtures for MK-STUDIO-UI-001. They do not execute mathematics, contact a host, authorize spending, or assert that a feature exists.
+These files are documentation fixtures. They do not execute mathematics, contact a host, authorize spending, or assert that a feature exists.
 
 `empty.mkstudio.json` is a minimal editor document matching the proposed `mk.studio/1` schema.
 
@@ -10,4 +10,4 @@ These files are documentation fixtures for MK-STUDIO-UI-001. They do not execute
 
 `run_observation_fixture.json` demonstrates independent execution, verification, artifact, resource, cost, and freshness axes. It is a **synthetic presentation fixture**, not a calculation or verification result. In particular, result readiness coexists with unknown cleanup and exposure.
 
-The editor schema does not validate operation-specific types, context, claims, execution eligibility, permissions, or cost. Those require real host contracts and separate tests. The package validator checks only the consistency and stated syntax of these documentation files.
+The editor schema does not validate operation-specific types, context, claims, execution eligibility, permissions, or cost. Those require real host contracts and separate tests.

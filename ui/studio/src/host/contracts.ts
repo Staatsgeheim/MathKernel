@@ -1,5 +1,6 @@
 import { z } from '../security/schema';
 import { id } from '../editor/document';
+import { workflowExtensions } from './workflow';
 export const PROTOCOL = 'studio-host/1';
 const text = z.string().max(8192);
 export const featuresSchema = z.strictObject({
@@ -23,6 +24,7 @@ export const handshakeSchema = z.strictObject({
   test_host: z.boolean(),
   features: featuresSchema,
   authenticated: z.literal(true),
+  extensions: workflowExtensions.optional(),
   limits: z.strictObject({
     control_bytes: z.number().int().min(1000).max(2097152),
     catalog_page: z.number().int().min(1).max(100),

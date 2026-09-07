@@ -3,6 +3,9 @@ import { admittedResult, receipt, verifyPages } from './result';
 import { HostError, type HostCommandService } from '../host/client';
 import { mathResultSchema, type ResultObservation } from '../host/contracts';
 import { JsonView, Text } from '../app/components';
+import { ArtifactInspector } from '../viewers/ArtifactInspector';
+import { SourceTables } from '../viewers/SourceTable';
+import { downloadJson } from '../editor/CompositionPanel';
 export function ResultInspector({
   observation,
   client,
@@ -18,8 +21,9 @@ export function ResultInspector({
   const [busy, setBusy] = useState(false);
   const [complete, setComplete] = useState<unknown>(null);
   const [pageIdentity, setPageIdentity] = useState<{ digest: string; bytes: number } | null>(null);
+  const [admission, setAdmission] = useState<ResultObservation | null>(null);
   const r = receipt(observation.result);
-  const accepted = admittedResult(observation);
+  const accepted = admittedResult(admission ?? observation);
   const parsed = mathResultSchema.safeParse(complete ?? observation.result);
   const shown = accepted ?? (parsed.success ? parsed.data : null);
   async function nextPage() {
@@ -74,6 +78,16 @@ export function ResultInspector({
             ? 'TEST FIXTURE — no mathematics was computed; evidence labels are synthetic.'
             : 'UNTRUSTED CANDIDATE — source labels are not admitted evidence.'}
       </p>
+      <button
+        onClick={() =>
+          downloadJson(
+            { schema: 'mk.studio.observation/1', observation },
+            'result-observation.json',
+          )
+        }
+      >
+        Export this observation
+      </button>
       <dl className="facts">
         <dt>Host / workspace</dt>
         <dd>
@@ -110,10 +124,52 @@ export function ResultInspector({
             </button>
           )}
           {complete !== null && (
-            <p className="notice">
-              Reconstructed source data. Per-claim admission summaries require a full host result
-              observation; no new badge is inferred from these bytes.
-            </p>
+            <div>
+              <p className="notice">
+                Reconstructed source data. Per-claim admission summaries require a full host result
+                observation; no new badge is inferred from these bytes.
+              </p>
+              <button
+                disabled={busy || observation.admission !== 'host'}
+                onClick={async () => {
+                  setBusy(true);
+                  try {
+                    const value = await client.resultAdmission(observation.binding.result_ref);
+                    if (
+                      JSON.stringify(value.binding) !== JSON.stringify(observation.binding) ||
+                      value.scope.host_instance_id !== observation.scope.host_instance_id ||
+                      value.scope.workspace_id !== observation.scope.workspace_id
+                    )
+                      throw new Error('Admission source binding changed.');
+                    // Never replace reconstructed bytes with a different admitted result.
+                    if (JSON.stringify(value.result) !== JSON.stringify(complete)) {
+                      const stable = (v: unknown): string =>
+                        JSON.stringify(v, (_key, item) =>
+                          item && typeof item === 'object' && !Array.isArray(item)
+                            ? Object.fromEntries(
+                                Object.keys(item)
+                                  .sort()
+                                  .map((key) => [key, item[key]]),
+                              )
+                            : item,
+                        );
+                      if (stable(value.result) !== stable(complete))
+                        throw new Error(
+                          'Admission snapshot differs from the reconstructed source.',
+                        );
+                    }
+                    setAdmission(value);
+                  } catch (e) {
+                    setError(String(e));
+                    if (e instanceof HostError && [401, 403].includes(e.status)) onHostError(e);
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                Refresh separately published host admission
+              </button>
+            </div>
           )}
         </section>
       )}
@@ -138,9 +194,15 @@ export function ResultInspector({
           <section>
             <h3>Value / existing artifact data</h3>
             <JsonView value={shown.data} />
+            <SourceTables value={shown.data} />
+            <ArtifactInspector
+              value={
+                shown.data.artifact ?? shown.data.visualization ?? shown.data.document ?? shown.data
+              }
+            />
             <p className="muted">
-              Structured text only. HTML, SVG, scripts and artifact URLs are inert. Rendering does
-              not add evidence.
+              Unsupported HTML, SVG, scripts and artifact URLs are inert. Rendering does not add
+              evidence.
             </p>
           </section>
           <section>
@@ -163,7 +225,8 @@ export function ResultInspector({
                 <summary>
                   <Text>{claim}</Text> ·{' '}
                   {accepted
-                    ? (observation.claim_trust[claim] ?? 'host claim trust not reported')
+                    ? ((admission ?? observation).claim_trust[claim] ??
+                      'host claim trust not reported')
                     : 'untrusted / fixture metadata'}
                 </summary>
                 <p className="muted">
@@ -217,6 +280,7 @@ export function ResultInspector({
       {!shown && !r && (
         <>
           <h3>Inert source data</h3>
+          <ArtifactInspector value={observation.result} />
           <JsonView value={observation.result} />
         </>
       )}

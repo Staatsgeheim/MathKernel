@@ -6,7 +6,8 @@ import sys
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
-AVAILABLE = all(importlib.util.find_spec(name) is not None for name in ('sympy','z3','numpy','pydantic','lark','mpmath'))
+sys.path.insert(0, str(Path(__file__).resolve().parents[4] / 'src'))
+AVAILABLE = all(importlib.util.find_spec(name) is not None for name in ('mathkernel','sympy','z3','numpy','pydantic','lark','mpmath'))
 
 
 @unittest.skipUnless(AVAILABLE, 'Full MathKernel dependencies are not installed in this environment')
@@ -39,17 +40,36 @@ class KernelIntegrationTests(unittest.TestCase):
         from mathkernel.models import MathResult
         from mathkernel.output_policy import enforce_output_budget
         from mathkernel_studio.source import KernelSource, InspectionRecord
-        old=self.kernel.settings.max_output_size_bytes
+        from dataclasses import replace
+        old=self.kernel.settings
         try:
             source=KernelSource(self.kernel,host_id='integration-host',workspace_id='integration-workspace',version='source-test')
-            self.kernel.settings.max_output_size_bytes=1000
+            self.kernel.settings=replace(old,max_output_size_bytes=2000)
             receipt=enforce_output_budget(self.kernel,MathResult(ok=True,data={'payload':'x'*10000}))
             record=InspectionRecord.from_result(receipt,result_ref='receipt',source_ref='stored-payload',source_revision='1')
             source.records={'receipt':record}
             self.assertEqual(source.result('receipt')['claim_trust'],{})
             first=source.result_page('receipt',0);self.assertEqual(first['resource_id'],record.resource_id)
             with self.assertRaises(KeyError):source.result_page('arbitrary-resource',0)
-        finally:self.kernel.settings.max_output_size_bytes=old
+        finally:self.kernel.settings=old
+
+    def test_receipt_admission_requires_matching_original_host_result(self):
+        from dataclasses import replace
+        from mathkernel.models import MathResult
+        from mathkernel.output_policy import enforce_output_budget
+        from mathkernel_studio.source import InspectionRecord, KernelSource
+        original = MathResult(ok=True, data={'text': 'x'*10000})
+        old = self.kernel.settings
+        try:
+            self.kernel.settings = replace(old, max_output_size_bytes=2000)
+            receipt = enforce_output_budget(self.kernel, original)
+        finally: self.kernel.settings = old
+        record = InspectionRecord.from_result(original, result_ref='complete', source_ref='existing', source_revision='1', delivery_receipt=receipt)
+        source = KernelSource(self.kernel, host_id='integration-host', workspace_id='workspace', records=(record,), version='test')
+        self.assertEqual(source.result_admission('complete')['result'], original.model_dump(mode='json'))
+        self.assertEqual(source.result('complete')['claim_trust'], {})
+        with self.assertRaises(ValueError):
+            InspectionRecord.from_result(MathResult(ok=True,data={'other':1}), result_ref='r',source_ref='s',source_revision='1',delivery_receipt=receipt)
 
 
 if __name__=='__main__': unittest.main()

@@ -1,20 +1,8 @@
 # MathKernel Studio — Visual Workflow User Interface
 
-## Technical design and implementation contract
+## Technical design
 
-**Document ID:** MK-STUDIO-UI-001\
-**Revision:** 1.0 — proposed UI design, not an implemented feature\
-**Prepared for:** Maarten Boone\
-**Date:** 7 September 2026\
-**Baseline:** supplied `MathKernel(6).zip`, package version `1.3.0.dev30`\
-**Companion reference:** MK-RHC-001 revision 1.0, the separate MathKernel remote and heterogeneous compute design, provisionally associated with release 1.4.\
-**Release placement:** an independently deliverable optional UI. No MathKernel package version is assigned by this document.
-
-**Baseline archive SHA-256**
-
-```text
-6c5975c3ddbc6e467737ebf4ed67b1843d62b97fe07b9b0b4dda3b8a41601f1c
-```
+Proposed UI design. It is not a claim that every described feature is implemented.
 
 ### Purpose
 
@@ -22,7 +10,7 @@ Specify a local-first, Node-RED-inspired visual interface for discovering, confi
 
 This document covers the UI, its presentation and authoring models, browser-side behavior, and the observable host interfaces it requires. It does **not** define a new execution IR, graph compiler, scheduler, compute provider, mathematical verifier, artifact format, billing ledger, or authorization implementation. An interface requirement is not a claim that the baseline supplies that interface.
 
-The deliverable is deliberately separate from the 1.4 compute design. It does not modify or supersede MK-RHC-001. All proposed `Studio*` types, application routes, host-facade methods, feature identifiers, and filenames are new design names. Numeric limits and performance budgets are proposed targets, not measurements. The accompanying fixtures and acceptance catalog describe future tests, not passing implementation tests.
+This UI design is separate from the remote-compute design. All proposed `Studio*` types, application routes, host-facade methods, feature identifiers, and filenames are new design names. Numeric limits and performance budgets are proposed targets, not measurements. The accompanying fixtures and acceptance catalog describe future tests, not passing implementation tests.
 
 ### Central architectural rule
 
@@ -30,7 +18,7 @@ The deliverable is deliberately separate from the 1.4 compute design. It does no
 
 ### The essential dependency qualification
 
-The inspected baseline has typed mathematical objects, capabilities, result/evidence structures, a derivation history, visualization and sonification documents, and a small local-job facility. It does **not** establish that a general executable multi-node workflow service already exists. MK-RHC-001 describes registered compute requests and bounded batches, not a universal visual-DAG runtime. A historical derivation DAG is not automatically an executable workflow. [B1–B9; P1 §§2, 5–7, 22]
+MathKernel has typed mathematical objects, capabilities, result/evidence structures, a derivation history, visualization and sonification documents, and a small local-job facility. It does **not** establish that a general executable multi-node workflow service already exists. The remote-compute design describes registered compute requests and bounded batches, not a universal visual-DAG runtime. A historical derivation DAG is not automatically an executable workflow.
 
 Studio can ship useful catalog, authoring, result-inspection, and supported single-operation experiences without that service. Advertising end-to-end visual workflow execution requires a separately supplied host capability and integration tests. Do not hide this dependency by executing nodes sequentially in JavaScript.
 
@@ -64,7 +52,7 @@ Studio can ship useful catalog, authoring, result-inspection, and supported sing
 26. [Performance, resource budgets, and large-workflow behavior](#26-performance-resource-budgets-and-large-workflow-behavior)
 27. [Test strategy and acceptance catalog](#27-test-strategy-and-acceptance-catalog)
 28. [Packaging, distribution, and documentation](#28-packaging-distribution-and-documentation)
-29. [Delivery sequence and agent handover](#29-delivery-sequence-and-agent-handover)
+29. [Implementation sequence](#29-implementation-sequence)
 30. [Architecture decisions, risks, and deferred features](#30-architecture-decisions-risks-and-deferred-features)
 31. [Worked end-to-end UI scenarios](#31-worked-end-to-end-ui-scenarios)
 32. [Source register and reference boundaries](#32-source-register-and-reference-boundaries)
@@ -110,7 +98,7 @@ The boundary remains valid when all processes run on one laptop. Co-location doe
 
 ## 2.1 Inspected integration points
 
-The source references below identify this exact supplied archive. The companion baseline manifest records hashes. Re-ground on the newest supplied source before implementation; none of these observations licenses overwriting a newer API.
+The source references below identify current MathKernel integration points. Re-check them before implementation; none of these observations licenses overwriting a newer API.
 
 | Existing component | Observed responsibility | UI implication |
 |---|---|---|
@@ -731,7 +719,7 @@ Thumbnail generation is not silently delegated to paid compute. Existing thumbna
 
 ## 20.1 UI scope
 
-This section specifies how Studio presents the contracts in MK-RHC-001. It does not implement resource estimation, cost accounting, provider integration, grant creation rules, provisioning, or cleanup. Those capabilities remain in the compute/authorization services. A host without compute-plan support omits the corresponding controls rather than fabricating estimates. [P1 §§7, 10, 12–13, 24]
+This section specifies how Studio presents remote-compute plan and authorization contracts. It does not implement resource estimation, cost accounting, provider integration, grant creation rules, provisioning, or cleanup. Those capabilities remain in the compute/authorization services. A host without compute-plan support omits the corresponding controls rather than fabricating estimates.
 
 A node can express a target preference such as local, configured target, or host-planned automatic selection. The effective engine and actual compute target are displayed separately. Target configuration and credential administration are operator functions; a graph import cannot add a server, change a provider account, or attach a secret.
 
@@ -1104,7 +1092,7 @@ A catalog/authoring/inspection release may be called that explicitly. A visual w
 
 Publish a support matrix by host protocol, feature tier, browser, artifact schema, and operation composition coverage. Generate catalog coverage reports from real registrations rather than claiming a fixed number of fully composable nodes because the MCP server has that many tools.
 
-# 29. Delivery sequence and agent handover
+# 29. Implementation sequence
 
 ## 29.1 UI milestones
 
@@ -1129,11 +1117,11 @@ Build the non-dragging/list interaction path alongside the canvas, not after the
 
 A working demo against fixtures is a useful milestone artifact, but must contain a permanent Test host indicator and no real-execution claim. Replace fixtures with real host contracts incrementally, documenting every behavior difference.
 
-## 29.3 Required handover report
+## 29.3 Progress notes
 
-Each milestone reports the exact input source/hash, changed files, supported UI tiers, host capabilities used, runtime dependencies still external, document/schema changes, tests actually run, pass/fail/skip counts, browser versions, accessibility checks, measured performance, known security limitations, and resulting artifact paths.
+Each milestone should record changed files, supported UI tiers, host capabilities used, remaining external dependencies, schema changes, tests actually run, and known limitations.
 
-Keep progress notes in a dedicated engineering handover. Preserve the existing README's coherent coverage. Do not repair missing UI integration by changing evidence semantics, adding automatic proof labels, or bypassing authorization. A missing backend dependency must remain a visible integration blocker until separately supplied.
+Do not repair missing UI integration by changing evidence semantics, adding automatic proof labels, or bypassing authorization. A missing backend dependency must remain a visible integration blocker until it exists.
 
 ## 29.4 Definition of done
 
@@ -1224,7 +1212,7 @@ The user reviews a plan, opens assumptions, confirms only after deliberately foc
 
 ## 32.1 Baseline and companion references
 
-The following source locations were inspected in the supplied archive. `baseline_manifest.json` records their hashes and the companion design's hash. These references ground integration observations, not claims of newly implemented features.
+The following source locations ground integration observations. They are not claims of newly implemented features.
 
 | Ref | Location | Used for |
 |---|---|---|
@@ -1238,13 +1226,13 @@ The following source locations were inspected in the supplied archive. `baseline
 | B8 | `src/mathkernel_sonify/models.py`, `artifact.py` | Existing sonification mappings and synchronization |
 | B9 | `src/mathkernel/kernel.py` | Facade, object APIs, derivations, local jobs, exports |
 | B10 | `src/mathkernel_mcp/server.py`, `pyproject.toml`, `README.md` | Existing integration/packaging surface |
-| P1 | `MathKernel_Remote_Compute_Technical_Design.md`, MK-RHC-001 rev. 1.0 | External compute, authorization, lifecycle and verification contracts |
+| P1 | Remote-compute technical design | External compute, authorization, lifecycle and verification contracts |
 
 P1 remains a proposed design. This UI specification must not promote its APIs to implemented status. Recheck the newest source before starting U0 and record which external capabilities actually exist then.
 
 ## 32.2 External primary references
 
-Official documentation and primary specifications below were checked on 7 September 2026. They support external-library and platform observations. The original UI requirements, limits, workflows, and milestones in this document are design decisions. Exact dependency versions and browser behavior require implementation-time testing.
+Official documentation and primary specifications below support external-library and platform observations. The UI requirements, limits, workflows, and milestones in this document are design decisions. Exact dependency versions and browser behavior require implementation-time testing.
 
 **S1 — React Flow overview, installation, licensing, and API.** Graph-interaction library and MIT licensing; not MathKernel execution semantics. `https://reactflow.dev/`; `https://reactflow.dev/learn`; `https://reactflow.dev/api-reference/react-flow`
 
@@ -1288,4 +1276,4 @@ Official documentation and primary specifications below were checked on 7 Septem
 
 ## 32.3 Document status
 
-No UI application, host facade, workflow service, provider integration, or mathematical feature was implemented while preparing this package. No live backend or cloud account was exercised. Document/schema/fixture consistency checks are reported separately and must not be mistaken for runtime, security, accessibility, or browser compatibility certification.
+Document, schema, and fixture consistency checks must not be mistaken for runtime, security, accessibility, or browser compatibility certification.

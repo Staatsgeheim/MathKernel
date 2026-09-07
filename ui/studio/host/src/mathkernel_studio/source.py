@@ -50,11 +50,13 @@ class InspectionRecord:
     result_json: bytes
     claim_trust_json: bytes
     resource_id: str | None = None
+    admitted_result_json: bytes | None = None
+    admitted_claims_json: bytes | None = None
 
     @classmethod
     def from_result(cls, result, *, result_ref: str, source_ref: str, source_revision: str,
                     run_ref: str | None = None, document_id: str | None = None,
-                    draft_revision: int | None = None, node_id: str | None = None):
+                    draft_revision: int | None = None, node_id: str | None = None, delivery_receipt=None):
         from mathkernel.models import MathResult
         if not isinstance(result, MathResult):
             raise TypeError("Only existing host MathResult objects can be admitted")
@@ -65,7 +67,14 @@ class InspectionRecord:
             raise ValueError("Invalid frozen draft revision")
         if run_ref is not None and any(v is None for v in (document_id, draft_revision, node_id)):
             raise ValueError("Run-linked results require a complete frozen node mapping")
-        payload = result.model_dump(mode="json")
+        full_payload = result.model_dump(mode="json")
+        if delivery_receipt is not None:
+            from mathkernel.output_policy import wire_bytes
+            if not isinstance(delivery_receipt, MathResult) or delivery_receipt.data.get('truncated') is not True:
+                raise ValueError('Expected an existing host output-budget receipt')
+            if delivery_receipt.data.get('sha256') != hashlib.sha256(wire_bytes(result)).hexdigest():
+                raise ValueError('Receipt does not identify the supplied existing result')
+        payload = (delivery_receipt.model_dump(mode='json') if delivery_receipt is not None else full_payload)
         data = payload.get("data", {})
         resource = data.get("resource_id") if data.get("truncated") is True else None
         if resource is not None:
@@ -74,7 +83,9 @@ class InspectionRecord:
         claims = {} if resource else {name: bundle.conservative_trust() for name, bundle in result.claim_evidence.items()}
         return cls(canonical(dict(result_ref=result_ref, source_ref=source_ref, source_revision=source_revision,
             run_ref=run_ref, document_id=document_id, draft_revision=draft_revision, node_id=node_id)),
-            canonical(payload), canonical(claims), resource)
+            canonical(payload), canonical(claims), resource,
+            canonical(full_payload) if delivery_receipt is not None else None,
+            canonical({name: bundle.conservative_trust() for name, bundle in result.claim_evidence.items()}) if delivery_receipt is not None else None)
 
 
 class KernelSource:
@@ -137,3 +148,9 @@ class KernelSource:
         if result.get("ok") is False:
             raise KeyError("Result resource expired")
         return result
+
+    def result_admission(self, ref: str) -> dict:
+        record = self.records[ref]
+        if record.admitted_result_json is None: raise KeyError('No separately published full admission snapshot')
+        if len(record.admitted_result_json) > 1900000: raise ValueError('Admission snapshot exceeds the control budget')
+        return dict(binding=json.loads(record.binding_json), admission='host', result=json.loads(record.admitted_result_json), claim_trust=json.loads(record.admitted_claims_json))

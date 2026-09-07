@@ -1,7 +1,5 @@
 {
-  "document_id": "MK-STUDIO-UI-001",
-  "revision": "1.0",
-  "status": "Planned acceptance specification; no runtime test has been executed by creating this catalog.",
+  "status": "Planned acceptance specification; cases are not claimed as executed.",
   "test_count": 144,
   "group_count": 24,
   "cases": [

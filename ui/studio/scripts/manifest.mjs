@@ -1,4 +1,4 @@
-import { readFile, readdir, writeFile, mkdir, copyFile } from 'node:fs/promises';
+import { readFile, readdir, writeFile, mkdir, copyFile, rm } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
 const root = path.resolve('host/src/mathkernel_studio/assets');
@@ -13,6 +13,31 @@ const packages = Object.entries(lock.packages)
     development: !!info.dev,
   }));
 await mkdir(root, { recursive: true });
+const viewerScript = await readFile(path.join(root, 'viewer', 'viewer.js'), 'utf8');
+const viewerStyle = await readFile(path.join(root, 'viewer.css'), 'utf8');
+let viewerHtml = await readFile(path.join(root, 'viewer.html'), 'utf8');
+viewerHtml = viewerHtml
+  .replace(
+    '<link rel="stylesheet" href="/studio/viewer.css">',
+    () => `<style>${viewerStyle}</style>`,
+  )
+  .replace(
+    '<script defer src="/studio/viewer/viewer.js"></script>',
+    () => `<script>${viewerScript}</script>`,
+  );
+if (
+  viewerHtml.includes('<link rel="stylesheet" href="/studio/viewer.css">') ||
+  viewerHtml.includes('<script defer src="/studio/viewer/viewer.js"></script>')
+)
+  throw new Error('Viewer assets were not inlined');
+await writeFile(path.join(root, 'viewer.html'), viewerHtml);
+const viewerHash = createHash('sha256').update(viewerScript).digest('base64');
+await writeFile(
+  path.join(root, 'viewer-csp.txt'),
+  `default-src 'none'; script-src 'sha256-${viewerHash}'; style-src 'unsafe-inline'; connect-src 'none'; object-src 'none'; base-uri 'none'; frame-ancestors 'self'; form-action 'none'`,
+);
+await rm(path.join(root, 'viewer'), { recursive: true, force: true });
+await rm(path.join(root, 'viewer.css'), { force: true });
 const notices = [];
 for (const [dir, info] of Object.entries(lock.packages)) {
   if (!dir) continue;

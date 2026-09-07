@@ -1,6 +1,6 @@
 # MathKernel Studio
 
-Studio is an optional, local browser workbench for MathKernel. This branch contains the **0.1.0 authoring and inspection preview**, based on MK-STUDIO-UI-001 revision 1.0. It is an implementation foundation, not a finished visual workflow runtime.
+Studio is an optional, local browser workbench for MathKernel. This branch contains the **0.2.0 U0–U3 authoring and inspection implementation**. It is not a general visual workflow runtime: execution remains capability-gated behind an external authoritative workflow service.
 
 Use the operation palette to explore your installed kernel, create input drafts, arrange nodes, inspect parameters, and save `.mkstudio.json` documents. Canvas and outline use the same edit commands. Existing host results can be published for read-only inspection; files opened in the browser remain untrusted candidates.
 
@@ -20,7 +20,7 @@ python -m pip install ./ui/studio/host
 mathkernel-studio
 ```
 
-Open the loopback address printed by the process. Click **Connect**, then enter its one-time code. The code expires after ten minutes and cannot be reused. A session lasts one hour; restart the host for a new code. **Disconnect UI** drops client observations, but does not revoke the browser session cookie; stop the host to terminate the session.
+Open the loopback address printed by the process. Click **Connect**, then enter its one-time code. The code expires after ten minutes and cannot be reused. A session lasts one hour. **Revoke session** clears the host session and client observations; restarting the host also creates a fresh identity and code.
 
 The host binds only to `127.0.0.1`. It deliberately does not expose a remote-listen option or accept imported host URLs. Use the printed address exactly: `localhost` is a different, unapproved Host value. Operator-managed HTTPS/reverse-proxy deployments require a separate integration, not a relaxed origin check.
 
@@ -49,11 +49,11 @@ Test-host faults: `denied`, `incompatible`, `scope_mismatch`, `catalog_drift`, `
 
 Exact integers, numerators and denominators never pass through JavaScript `Number`. Decimal text is approximate; decimal-comma input and nonfinite values are explicitly unsupported. Changing display/layout information cannot alter an exact value. Mathematical parameters, connections and output intent increment the draft revision; labels and positions increment presentation revision. Undo/redo restore content while revisions remain monotonic.
 
-Use **Outline** for a non-dragging, keyboard-accessible editing path. Checkboxes select several nodes; position fields move them; Connect/Reconnect/Disconnect edit wires. **Arrange** applies a reversible three-column layout without changing mathematics. Ctrl/Cmd+Z and redo work outside editable fields; Delete opens a draft-deletion preview. Imported groups are preserved but group editing is deferred. Above 200 nodes the canvas yields to the outline; no nodes are dropped from the file.
+Use **Outline** for a non-dragging, keyboard-accessible editing path. Checkboxes select several nodes; position fields move them; Connect/Reconnect/Disconnect edit wires. **Arrange** applies a reversible three-column layout without changing mathematics. Ctrl/Cmd+Z and redo work outside editable fields; Delete opens a draft-deletion preview. **Compose & compare** creates presentation-only groups, exports authority-free reusable fragments, inserts fragments with fresh IDs, and compares retained semantic and presentation revisions. Above 200 nodes the canvas yields to the outline; no nodes are dropped from the file.
 
 ## Recovery and import
 
-Recovery is opt-in because expressions may be private. **Enable recovery** uses IndexedDB with host/workspace/document identity and version checks. An existing copy offers restore/discard; a conflicting tab is reported rather than overwritten. Restore never replays commands or reconnects. After restoring another document, enable recovery again to resume saving it.
+Recovery is opt-in because expressions may be private. **Enable recovery** uses IndexedDB with host/workspace/document identity and version checks. The recovery browser lists scoped copies and offers restore, compare, export, or discard; a conflicting tab is reported rather than overwritten. Restore never replays commands or reconnects. After restoring another document, enable recovery again to resume saving it.
 
 Storage is limited to ten document copies, each at most 10 MiB. Browser quota/eviction and policy may impose smaller limits. The most recent copy in the current host/workspace is offered first. Recovery copies are not backups or authoritative host saves. Pause retains the existing copy. Use file export for durable handoff; discard an existing copy through the recovery dialog to remove it.
 
@@ -63,7 +63,7 @@ Import parsing runs in a terminable worker with a five-second budget. The suppli
 
 ## Inspect existing results
 
-**Open candidate JSON** accepts bounded JSON as untrusted source data. It can display values, original labels, assumptions and per-claim metadata, but cannot promote any label into a host-admitted badge. HTML/SVG, proof text and URLs are rendered as escaped, bounded text. There are no active HTML, 3D or audio viewers in this preview.
+**Open candidate JSON** accepts bounded JSON as untrusted source data. It can display values, original labels, assumptions and per-claim metadata, but cannot promote any label into a host-admitted badge. HTML/SVG, proof text and URLs are rendered as escaped, bounded text. Supported inline `mathkernel-viz/2.0` plots and point/trajectory data can open in a fixed isolated renderer; unsupported transforms, encodings and active content remain inert source data. Exact source tables and exports remain separate from floating-point screen coordinates.
 
 For an already-running Python host, explicitly publish existing `MathResult` objects:
 
@@ -107,17 +107,17 @@ cd ../..
 python -m unittest discover -s ui/studio/host/tests -v
 ```
 
-The tests exercise reducer/codec invariants, IndexedDB conflicts, typed client contracts, escaped component output, session/origin enforcement and the actual legacy registry classes. Browser rendering, drag gestures, screen readers, 200% zoom, actual Chrome/Edge/Firefox/Safari, full-kernel end-to-end inspection, resource-lifecycle streaming and remote compute require later integration/hardening. Automated static rendering does not establish browser accessibility.
+The tests exercise reducer/codec invariants, groups/fragments and revision comparison, matrix review, IndexedDB conflicts, typed client contracts, escaped component output, viewer projection/isolation, session/origin enforcement, the actual legacy registry classes, and live `MathKernel` result/receipt integration. A real Chrome journey covered offline authoring, exact integers beyond binary precision, advisory checks, fixture-host disclosure, catalog loading, non-drag port connection, recovery conflict presentation, per-claim result inspection, and the isolated plot/table viewer. Screen-reader testing, 200% zoom, drag gestures, and the Edge/Firefox/Safari matrix remain release-hardening work rather than U0–U3 code gaps.
 
 No supported deep-link loading is advertised yet. Nested routes return the same static shell with an unresolved-link notice and no automatic data access. The supported application base is `/studio/`. An outline over the hard limits is rejected; the 200-node canvas threshold is conservative and unbenchmarked in real browsers.
 
-See [the implementation report](notes/implementation-report.md) for exact grounding, tests, known gaps and subsequent work. The [supplied design](design/MathKernel_Studio_UI_Technical_Design.md) and [planned acceptance catalog](design/UI_Acceptance_Test_Catalog.json) remain the larger delivery contract.
+See [implementation notes](notes/implementation-report.md) for tests and known gaps. The [UI design](design/MathKernel_Studio_UI_Technical_Design.md) and [planned acceptance catalog](design/UI_Acceptance_Test_Catalog.json) describe the intended product, including features this preview does not implement.
 
 ## Maintainer architecture
 
-- `src/editor`: independent document/reducer, bounded history, import and recovery.
+- `src/editor`: independent document/reducer, bounded history, groups/fragments, comparison, diagnostics, import and recovery.
 - `src/host`: explicit read-only client and runtime-validated scoped envelopes.
-- `src/inspectors`, `src/evidence`: text-preserving inputs and faithful source inspection.
+- `src/inspectors`, `src/evidence`, `src/viewers`: text-preserving inputs, matrix review, faithful evidence/source inspection and isolated fixed visualization.
 - `src/security`: duplicate-aware bounded JSON parser and no-JIT schema configuration.
 - `src/workers`: import parsing only; no mathematical execution.
 - `host/src/mathkernel_studio`: optional loopback static host, discovery projection and fixture faults.
@@ -128,4 +128,4 @@ Locked versions are in `package-lock.json`. `npm run build` emits the optional p
 python -m pip wheel --no-deps ./ui/studio/host -w dist
 ```
 
-Script CSP is `script-src 'self'`; schema validation explicitly disables JIT. React Flow uses a documented style-attribute allowance, `style-src 'self' 'unsafe-inline'`. Authentication state exists only in a short-lived HttpOnly/SameSite cookie and host memory. This is an initial loopback preview, not a remotely exposed production service or a completed security audit.
+The main shell uses `script-src 'self'`; schema validation explicitly disables JIT. React Flow uses a documented style-attribute allowance, `style-src 'self' 'unsafe-inline'`. The opaque-origin viewer is a self-contained file whose single script is authorized by an exact SHA-256 CSP hash; it has no connection permission. Authentication state exists only in a short-lived HttpOnly/SameSite cookie and host memory. This is a loopback application, not a remotely exposed production service or a completed security audit.

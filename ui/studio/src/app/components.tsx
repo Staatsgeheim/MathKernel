@@ -1,3 +1,4 @@
+import { randomId } from '../security/identity';
 import { Component, useEffect, useRef, useState, type ReactNode } from 'react';
 import { displayText } from '../security/json';
 export function Text({ children }: { children: string }) {
@@ -88,12 +89,12 @@ export function Field({
   live?: boolean;
 }) {
   const [buffer, setBuffer] = useState(value);
-  const transaction = useRef(crypto.randomUUID());
+  const transaction = useRef(randomId());
   useEffect(() => setBuffer(value), [value]);
   const props = {
     value: buffer,
     onFocus: () => {
-      transaction.current = crypto.randomUUID();
+      transaction.current = randomId();
     },
     onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       setBuffer(event.target.value);

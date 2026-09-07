@@ -5,6 +5,7 @@ import type { Operation } from '../host/contracts';
 import { scalarDraft, integerError, rationalError, realError, type ScalarDraft } from './exact';
 import { Field, JsonView, Text } from '../app/components';
 import { parseJson } from '../security/json';
+import { StructuredInput, ParameterControl } from './StructuredInput';
 
 export function NodeInspector({
   node,
@@ -60,6 +61,19 @@ export function NodeInspector({
         value={node.label}
         onCommit={(label) => command({ type: 'label', nodeId: node.id, label })}
       />
+      {node.kind === 'object_binding' && node.parameter_drafts.value && (
+        <StructuredInput
+          text={node.parameter_drafts.value.text}
+          onChange={(text, transaction) =>
+            command({
+              type: 'parameters',
+              nodeId: node.id,
+              transaction,
+              drafts: { ...node.parameter_drafts, value: { encoding: 'json_text', text } },
+            })
+          }
+        />
+      )}
       {scalar && (
         <section>
           <h3>{scalar.kind === 'real' ? 'Numerical input' : 'Exact input'}</h3>
@@ -132,19 +146,22 @@ export function NodeInspector({
         </p>
         {[...keys].map((key) => (
           <div key={key} className="parameter-field">
-            <Field
-              live
-              label={`${key}${Object.hasOwn(node.parameter_drafts, key) ? '' : ' (omitted)'}`}
-              multiline
-              value={node.parameter_drafts[key]?.text ?? ''}
-              onCommit={(text, transaction) =>
+            <ParameterControl
+              name={`${key}${Object.hasOwn(node.parameter_drafts, key) ? '' : ' (omitted)'}`}
+              schema={
+                properties && typeof properties === 'object'
+                  ? (properties as Record<string, unknown>)[key]
+                  : undefined
+              }
+              value={node.parameter_drafts[key]?.text}
+              onChange={(text, encoding, transaction) =>
                 command({
                   type: 'parameters',
                   transaction,
                   nodeId: node.id,
                   drafts: {
                     ...node.parameter_drafts,
-                    [key]: { encoding: node.parameter_drafts[key]?.encoding ?? 'text', text },
+                    [key]: { encoding: node.parameter_drafts[key]?.encoding ?? encoding, text },
                   },
                 })
               }

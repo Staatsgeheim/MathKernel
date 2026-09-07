@@ -98,6 +98,11 @@ type EditCommand =
   | { type: 'parameters'; nodeId: string; drafts: DraftNode['parameter_drafts'] }
   | { type: 'move'; positions: Record<string, Position> }
   | { type: 'viewport'; viewport: StudioDocument['presentation']['viewport'] }
+  | { type: 'group'; group: StudioDocument['presentation']['groups'][number] }
+  | { type: 'ungroup'; groupId: string }
+  | { type: 'bindings'; nodeId: string; bindings: DraftNode['input_bindings'] }
+  | { type: 'rebind'; nodeId: string; operation: Operation }
+  | { type: 'insert'; document: StudioDocument }
   | { type: 'delete'; nodeIds: string[] }
   | { type: 'duplicate'; nodeIds: string[] }
   | { type: 'connect'; edge: DraftEdge; replace?: boolean }
@@ -155,6 +160,57 @@ export function execute(state: History, c: Command, catalog: readonly Operation[
     return n;
   }
   switch (c.type) {
+    case 'group': {
+      c.group.members.forEach(node);
+      const existing = d.presentation.groups.findIndex((g) => g.id === c.group.id);
+      if (existing < 0) d.presentation.groups.push(structuredClone(c.group));
+      else d.presentation.groups[existing] = structuredClone(c.group);
+      break;
+    }
+    case 'ungroup':
+      d.presentation.groups = d.presentation.groups.filter((g) => g.id !== c.groupId);
+      break;
+    case 'bindings':
+      node(c.nodeId).input_bindings = structuredClone(c.bindings);
+      break;
+    case 'rebind': {
+      const n = node(c.nodeId);
+      n.operation_ref = c.operation.operation_ref;
+      n.operation_version = c.operation.operation_version;
+      n.schema_digest = c.operation.schema_digest;
+      break;
+    }
+    case 'insert': {
+      const fragment = validateDocument(c.document);
+      const ids = new Map(fragment.authoring.nodes.map((n) => [n.id, newId()]));
+      for (const old of fragment.authoring.nodes) {
+        const copy = structuredClone(old);
+        copy.id = ids.get(old.id)!;
+        copy.input_bindings = {};
+        d.authoring.nodes.push(copy);
+        const p = fragment.presentation.node_positions[old.id] ?? { x: 0, y: 0 };
+        d.presentation.node_positions[copy.id] = { x: p.x + 40, y: p.y + 40 };
+      }
+      d.authoring.edges.push(
+        ...fragment.authoring.edges.map((e) => ({
+          ...e,
+          id: newId(),
+          source_node: ids.get(e.source_node)!,
+          target_node: ids.get(e.target_node)!,
+        })),
+      );
+      d.authoring.desired_outputs.push(
+        ...fragment.authoring.desired_outputs.map((o) => ({ ...o, node_id: ids.get(o.node_id)! })),
+      );
+      d.presentation.groups.push(
+        ...fragment.presentation.groups.map((g) => ({
+          ...g,
+          id: newId(),
+          members: g.members.map((n) => ids.get(n)!),
+        })),
+      );
+      break;
+    }
     case 'add':
       d.authoring.nodes.push(structuredClone(c.node));
       d.presentation.node_positions[c.node.id] = c.position;
@@ -295,6 +351,8 @@ export interface Diagnostic {
   edgeId?: string;
   revision: number;
   layer: 'editor' | 'advisory';
+  severity?: 'error' | 'warning' | 'information' | 'unresolved';
+  field?: string;
 }
 export function diagnostics(d: StudioDocument, catalog: readonly Operation[]): Diagnostic[] {
   const out: Diagnostic[] = [];
@@ -316,6 +374,22 @@ export function diagnostics(d: StudioDocument, catalog: readonly Operation[]): D
         revision: d.authoring.revision,
         layer: 'advisory',
       });
+    for (const p of op?.input_ports ?? []) {
+      if (
+        p.required === true &&
+        !n.input_bindings[p.id] &&
+        !d.authoring.edges.some((e) => e.target_node === n.id && e.target_port === p.id)
+      )
+        out.push({
+          code: 'REQUIRED_INPUT',
+          severity: 'unresolved',
+          field: p.id,
+          message: `${n.label}: required input ${p.label} is unbound.`,
+          nodeId: n.id,
+          revision: d.authoring.revision,
+          layer: 'advisory',
+        });
+    }
   }
   for (const e of d.authoring.edges) {
     const c = compatibility(d, catalog, e);

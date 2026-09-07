@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { HostCommandService } from '../src/host/client';
 import { admittedResult, receipt, verifyPages } from '../src/evidence/result';
 import { handshakeSchema, type Handshake, type ResultObservation } from '../src/host/contracts';
+import { acceptSnapshot, runSchema } from '../src/host/workflow';
 const h: Handshake = {
   host_instance_id: 'h',
   workspace_id: 'w',
@@ -23,6 +24,16 @@ const h: Handshake = {
     approval_interact: false,
   },
   limits: { control_bytes: 2097152, catalog_page: 25 },
+};
+const workflowHost: Handshake = {
+  ...h,
+  features: { ...h.features, workflow_validate: true, workflow_execute: true, run_observe: true },
+  extensions: {
+    contract: 'studio-workflow/1',
+    scopes: ['workflow_outputs'],
+    objects: false,
+    subworkflows: false,
+  },
 };
 function envelope(payload: unknown, init?: RequestInit, scope = 'h') {
   return new Response(
@@ -54,6 +65,72 @@ const result: ResultObservation = {
   scope: { host_instance_id: 'h', workspace_id: 'w' },
 };
 describe('host observation boundaries', () => {
+  it('requires explicit workflow protocol even if a legacy host advertises execution', async () => {
+    const f = vi.fn(async (_url: RequestInfo | URL, init?: RequestInit) =>
+      envelope({ ...h, features: { ...h.features, workflow_execute: true } }, init),
+    );
+    const c = new HostCommandService(f);
+    await c.connect();
+    await expect(c.submit('plan', 'a'.repeat(64), null, 'request')).rejects.toThrow(
+      'compatible host',
+    );
+    expect(f).toHaveBeenCalledTimes(1);
+  });
+  it('lost submission response sends exactly one mutation and allows only an explicit reconciliation read', async () => {
+    const f = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+      if (String(url).endsWith('handshake')) return envelope(workflowHost, init);
+      if (String(url).endsWith('workflow/submit'))
+        throw new Error('Connection lost after dispatch');
+      return envelope(
+        {
+          client_request_id: 'req-1',
+          plan_ref: 'plan',
+          outcome: 'accepted',
+          run_ref: 'run',
+          message: 'Existing request found',
+        },
+        init,
+      );
+    });
+    const c = new HostCommandService(f);
+    await c.connect();
+    await expect(c.submit('plan', 'a'.repeat(64), null, 'req-1')).rejects.toThrow('lost');
+    expect(f.mock.calls.filter(([, options]) => options?.method === 'POST')).toHaveLength(1);
+    expect((await c.reconcile('req-1')).run_ref).toBe('run');
+    expect(f.mock.calls.at(-1)![1]!.method).toBe('GET');
+  });
+  it('preserves newer run facts, rejects changed frozen identities and deduplicates events', () => {
+    const run = runSchema.parse({
+      run_ref: 'run',
+      binding: { document_id: 'doc', draft_revision: 1, document_digest: 'a'.repeat(64) },
+      plan_ref: 'plan',
+      revision: 2,
+      cursor: 'cursor',
+      observed_at: '2026-09-07T00:00:00Z',
+      execution: 'output ready',
+      verification: 'inconclusive',
+      artifacts: 'partial',
+      resources: 'unknown',
+      cost: 'unknown',
+      warnings: [],
+      attempts: [],
+      events: [],
+      actions: [],
+    });
+    expect(acceptSnapshot(run, { ...run, revision: 1, execution: 'running' })).toEqual(run);
+    expect(() =>
+      acceptSnapshot(run, { ...run, binding: { ...run.binding, draft_revision: 2 } }),
+    ).toThrow('identity');
+    expect(() => acceptSnapshot(run, { ...run, cost: 'zero' })).toThrow('Conflicting');
+    const e = {
+      event_id: 'event',
+      revision: 3,
+      kind: 'progress',
+      message: 'Existing event',
+      observed_at: run.observed_at,
+    };
+    expect(acceptSnapshot(run, { ...run, revision: 3, events: [e, e] }).events).toHaveLength(1);
+  });
   it('constructing a client triggers no network request', () => {
     const f = vi.fn();
     new HostCommandService(f);

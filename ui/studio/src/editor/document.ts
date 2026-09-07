@@ -1,3 +1,4 @@
+import { randomId } from '../security/identity';
 import { z } from '../security/schema';
 import { DOCUMENT_BYTES, parseJson } from '../security/json';
 
@@ -78,7 +79,7 @@ export type StudioDocument = z.infer<typeof documentSchema>;
 export type DraftNode = z.infer<typeof nodeSchema>;
 export type DraftEdge = z.infer<typeof edgeSchema>;
 export type Position = z.infer<typeof position>;
-export const newId = () => crypto.randomUUID();
+export const newId = () => randomId();
 export function emptyDocument(): StudioDocument {
   return {
     schema: 'mk.studio/1',
@@ -107,7 +108,8 @@ export function validateDocument(value: unknown): StudioDocument {
   for (const key of Object.keys(d.presentation.node_positions))
     if (!nodes.has(key)) throw new Error('Dangling node position.');
   for (const g of d.presentation.groups)
-    if (g.members.some((n) => !nodes.has(n))) throw new Error('Dangling group member.');
+    if (g.members.some((n) => !nodes.has(n)) || new Set(g.members).size !== g.members.length)
+      throw new Error('Dangling or duplicate group member.');
   for (const n of d.authoring.nodes) {
     const bytes = Object.values(n.parameter_drafts).reduce(
       (s, v) => s + new TextEncoder().encode(v.text).length,
@@ -127,17 +129,30 @@ export function serializeDocument(d: StudioDocument): string {
   return text;
 }
 
-export function makeInput(kind: 'integer' | 'rational' | 'real'): DraftNode {
+export function makeInput(
+  kind: 'integer' | 'rational' | 'real' | 'matrix' | 'expression',
+): DraftNode {
   const value =
-    kind === 'rational'
-      ? { kind, numerator: '1', denominator: '3' }
-      : kind === 'real'
-        ? { kind, value: '0.1', precision: 53 }
-        : { kind, value: '9007199254740993' };
+    kind === 'matrix'
+      ? {
+          kind,
+          arithmetic: 'exact',
+          cells: [
+            ['1', '0'],
+            ['0', '1'],
+          ],
+        }
+      : kind === 'expression'
+        ? { kind, language: 'mathkernel', text: 'x^2 + 1', context: '' }
+        : kind === 'rational'
+          ? { kind, numerator: '1', denominator: '3' }
+          : kind === 'real'
+            ? { kind, value: '0.1', precision: 53 }
+            : { kind, value: '9007199254740993' };
   return {
     id: newId(),
     kind: 'object_binding',
-    label: `${kind === 'real' ? 'Numerical' : 'Exact'} ${kind} input`,
+    label: `${kind === 'real' ? 'Numerical' : 'Draft'} ${kind} input`,
     operation_ref: null,
     operation_version: null,
     schema_digest: null,
