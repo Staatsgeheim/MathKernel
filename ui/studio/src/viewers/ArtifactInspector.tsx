@@ -1,3 +1,4 @@
+import { projectAudio, type AudioData } from './audio';
 import { randomId } from '../security/identity';
 import { useEffect, useRef, useState } from 'react';
 import { JsonView, Text } from '../app/components';
@@ -5,7 +6,7 @@ import { projectVisualization, viewerMessage, type ViewerData } from './contract
 import { downloadJson } from '../editor/CompositionPanel';
 
 export function ArtifactInspector({ value }: { value: unknown }) {
-  const [active, setActive] = useState<ViewerData | null>(null);
+  const [active, setActive] = useState<ViewerData | AudioData | null>(null);
   const obj = value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
   const wrapped =
     obj.artifact_schema === 'mathkernel-artifact/1.0' &&
@@ -29,26 +30,29 @@ export function ArtifactInspector({ value }: { value: unknown }) {
         },
       }
     : projectVisualization(value);
-  if (!projected) return null;
+  const audio = projectAudio(value);
+  if (!projected && !audio) return null;
   return (
     <section>
       <h3>
-        <Text>{projected.title}</Text>
+        <Text>{projected?.title ?? audio?.view?.title ?? 'Sonification'}</Text>
       </h3>
       <p className="notice">
         Presentation of existing data. Screen coordinates use floating point; the source remains
         unchanged. Viewer labels never admit evidence.
       </p>
-      {projected.views.map((v) => (
+      {projected?.views.map((v) => (
         <button key={v.artifact} onClick={() => setActive(v)}>
           Open {v.title}
         </button>
       ))}
-      {projected.unsupported.map((v, i) => (
+      {projected?.unsupported.map((v, i) => (
         <p className="muted" key={i}>
           <Text>{v}</Text>
         </p>
       ))}
+      {audio?.view && <button onClick={() => setActive(audio.view)}>Open audio audition</button>}
+      {audio?.reason && <p className="notice">{audio.reason}</p>}
       {active && (
         <>
           <button onClick={() => setActive(null)}>Close active viewer</button>
@@ -57,7 +61,7 @@ export function ArtifactInspector({ value }: { value: unknown }) {
       )}
       <details>
         <summary>Source transformations and provenance</summary>
-        <JsonView value={projected.lineage} />
+        <JsonView value={projected?.lineage ?? value} />
       </details>
       <button onClick={() => downloadJson(value, 'existing-visualization.json')}>
         Export existing source representation
@@ -65,12 +69,13 @@ export function ArtifactInspector({ value }: { value: unknown }) {
     </section>
   );
 }
-function IsolatedViewer({ data }: { data: ViewerData }) {
+function IsolatedViewer({ data }: { data: ViewerData | AudioData }) {
   const frame = useRef<HTMLIFrameElement>(null),
     port = useRef<MessagePort | null>(null);
   const [status, setStatus] = useState('Opening isolated viewer…');
   const [channel] = useState(() => randomId());
   useEffect(() => {
+    let acknowledged = false;
     const initialize = (event: MessageEvent) => {
       if (event.source !== frame.current?.contentWindow || event.data?.kind !== 'studio-view-ready')
         return;
@@ -88,6 +93,7 @@ function IsolatedViewer({ data }: { data: ViewerData }) {
         )
           return;
         sequence = v.data.seq;
+        if (v.data.kind === 'ready') acknowledged = true;
         setStatus(v.data.text);
       };
       frame.current?.contentWindow?.postMessage({ kind: 'studio-view-init', channel, data }, '*', [
@@ -99,7 +105,7 @@ function IsolatedViewer({ data }: { data: ViewerData }) {
     const timer = setTimeout(
       () =>
         setStatus((old) =>
-          old.includes('points displayed')
+          acknowledged
             ? old
             : 'The isolated renderer did not start. Close this viewer and use the source representation below; no computation or network fallback was requested.',
         ),

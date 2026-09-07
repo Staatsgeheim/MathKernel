@@ -61,6 +61,24 @@ class WorkflowServiceTests(unittest.TestCase):
         run = self.service.read('runs', ref, 0, self.scope)
         self.assertIn('unknown', run['resources']); self.assertIn('unknown', run['cost']); self.assertIn('cancel requested', run['execution'])
 
+    def test_request_identity_cannot_cross_scopes_or_change_payload(self):
+        plan = self.plan(); _, authority = self.authorize(plan)
+        payload = {'plan_ref': plan['plan_ref'], 'plan_digest': plan['digest'], 'authority_ref': authority['authority_ref'], 'client_request_id': 'unique-submit'}
+        reply = self.command('workflow/submit', payload, 'unique-submit')
+        with self.assertRaises(PermissionError):
+            self.command('workflow/submit', {**payload, 'authority_ref': 'different'}, 'unique-submit')
+        with self.assertRaises(PermissionError):
+            self.command('workflow/submit', payload, 'unique-submit', SessionScope('other-host', self.scope.workspace_id, self.scope.session_id))
+        self.assertEqual(self.command('workflow/submit', payload, 'unique-submit'), reply)
+        self.assertEqual(len(self.service.runs), 1)
+
+    def test_validation_freezes_the_document_and_read_scope_includes_workspace(self):
+        plan = self.plan()
+        self.binding['draft_revision'] = 99
+        self.assertEqual(self.service.plans[plan['plan_ref']][0]['binding']['draft_revision'], 1)
+        with self.assertRaises(PermissionError):
+            self.command('approval/challenge', {'plan_ref': plan['plan_ref'], 'plan_digest': plan['digest']}, scope=SessionScope(self.scope.host_instance_id, 'other-workspace', self.scope.session_id))
+
     def test_parser_rejects_duplicate_keys_nonfinite_large_numbers_and_unknown_fields(self):
         for raw in (b'{"plan_ref":"p","plan_ref":"q","plan_digest":"x"}', b'{"__proto__":{}}', b'{"revision":9007199254740993}', b'{"revision":NaN}', b'{"revision":1e400}', b'{"approved":true}'):
             with self.assertRaises(ValueError): parse_command(raw, 'workflow/submit')

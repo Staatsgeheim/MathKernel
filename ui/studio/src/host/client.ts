@@ -68,6 +68,11 @@ async function boundedResponse(response: Response, limit: number): Promise<unkno
 /** Only this named service performs network actions. No scheduler and no mutation retry. */
 export class HostCommandService {
   private generation = 0;
+  private clock: { host: number; local: number } | null = null;
+  /** Approximate host time for display gating; validity is always host-enforced. */
+  hostNow(): number {
+    return this.clock ? this.clock.host + performance.now() - this.clock.local : Date.now();
+  }
   private abort = new AbortController();
   private scope: Scope | null = null;
   private handshakeValue: Handshake | null = null;
@@ -78,6 +83,7 @@ export class HostCommandService {
     this.abort = new AbortController();
     this.scope = null;
     this.handshakeValue = null;
+    this.clock = null;
   }
   private async get<T>(
     path: string,
@@ -130,6 +136,7 @@ export class HostCommandService {
       if (h.host_instance_id !== e.host_instance_id || h.workspace_id !== e.workspace_id)
         throw new HostError('Handshake identity mismatch.');
     }
+    this.clock = { host: Date.parse(e.observed_at), local: performance.now() };
     return { payload, observed_at: e.observed_at };
   }
   async connect(code?: string): Promise<Handshake> {
@@ -295,6 +302,22 @@ export class HostCommandService {
     const value = (await this.get(`runs/${encodeURIComponent(ref)}`, runSchema)).payload;
     if (value.run_ref !== ref) throw new HostError('Run reference mismatch.');
     return value;
+  }
+  async runResult(
+    run: import('./workflow').Run,
+    attempt: import('./workflow').Run['attempts'][number],
+  ) {
+    if (!attempt.result_ref) throw new HostError('This attempt has no result reference.');
+    const result = await this.result(attempt.result_ref);
+    const b = result.binding;
+    if (
+      b.run_ref !== run.run_ref ||
+      b.document_id !== run.binding.document_id ||
+      b.draft_revision !== run.binding.draft_revision ||
+      b.node_id !== attempt.node_id
+    )
+      throw new HostError('Result does not belong to this frozen run and node.');
+    return result;
   }
   async runs(offset = 0) {
     this.requireWorkflow('run_observe');

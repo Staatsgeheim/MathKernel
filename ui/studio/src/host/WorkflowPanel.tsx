@@ -1,5 +1,7 @@
+import { ComputeReview } from './ComputeReview';
+import { readPending, retainPending, checkReply, type Pending } from './pending';
 import { randomId } from '../security/identity';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Handshake } from './contracts';
 import type { HostCommandService } from './client';
 import { Dialog, JsonView, Text } from '../app/components';
@@ -27,6 +29,7 @@ export function WorkflowPanel({
   client,
   onClose,
   onHostError,
+  onResult,
 }: {
   document: StudioDocument;
   selection: string[];
@@ -34,6 +37,7 @@ export function WorkflowPanel({
   client: HostCommandService;
   onClose: () => void;
   onHostError: (e: unknown) => void;
+  onResult?: (result: import('./contracts').ResultObservation) => void;
 }) {
   const [validation, setValidation] = useState<Validation | null>(null),
     [plan, setPlan] = useState<Plan | null>(null);
@@ -52,14 +56,32 @@ export function WorkflowPanel({
   const [scope, setScope] = useState(host.extensions?.scopes[0] ?? 'workflow_outputs');
   const [reference, setReference] = useState('');
   const storageKey = `mk-studio-pending:${host.host_instance_id}:${host.workspace_id}`;
-  const [pending, setPending] = useState<string | null>(() => {
-    try {
-      const value = localStorage.getItem(storageKey);
-      return value ? id.parse(value) : null;
-    } catch {
-      return null;
-    }
-  });
+  const [journalError, setJournalError] = useState('');
+  const [pendingRecord, setPendingRecord] = useState<Pending | null>(null);
+  useEffect(() => {
+    const refresh = () => {
+      try {
+        setPendingRecord(readPending(localStorage, storageKey));
+        setJournalError('');
+      } catch {
+        setJournalError(
+          'Command recovery storage is unavailable or corrupt. Submission is blocked; preserve browser storage and reconcile with the host operator.',
+        );
+      }
+    };
+    refresh();
+    window.addEventListener('storage', refresh);
+    return () => window.removeEventListener('storage', refresh);
+  }, [storageKey]);
+  const pending = pendingRecord?.request ?? null;
+  // Tick display gates so a quiet, open approval cannot stay enabled past expiry.
+  const [, tick] = useState(0);
+  useEffect(() => {
+    const timer = window.setInterval(() => tick((n) => n + 1), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+  const latestDocument = useRef(document);
+  latestDocument.current = document;
   const [actionReview, setActionReview] = useState<Run['actions'][number] | null>(null);
   const compatible = host.extensions?.contract === 'studio-workflow/1';
   const current = (p: Plan | Validation) =>
@@ -71,7 +93,19 @@ export function WorkflowPanel({
     setBusy(true);
     setError('');
     try {
-      await action();
+      if (navigator.locks)
+        await navigator.locks.request(
+          `studio-command:${storageKey}`,
+          { ifAvailable: true },
+          async (lease) => {
+            if (!lease)
+              throw new Error(
+                'Another tab is reviewing a host command. Wait and reconcile its outcome.',
+              );
+            await action();
+          },
+        );
+      else await action();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Host command failed.');
       setFreshness('Stale / request failed');
@@ -81,23 +115,30 @@ export function WorkflowPanel({
       setBusy(false);
     }
   }
-  function retain(request: string) {
-    // Persist correlation only. Never persist authority or a command for replay.
-    localStorage.setItem(storageKey, request);
-    setPending(request);
+  function retain(request: string, planRef: string) {
+    if (!navigator.locks)
+      throw new Error(
+        'This browser cannot coordinate commands across tabs. Submission is unavailable.',
+      );
+    const value = { request, plan: planRef };
+    retainPending(localStorage, storageKey, value);
+    setPendingRecord(value);
   }
-  function resolve(reply: Submission, expected: string) {
-    if (reply.client_request_id !== expected)
-      throw new Error('Command correlation mismatch. Outcome remains unknown.');
+  function resolve(reply: Submission, expected: string, planRef?: string) {
+    const record = readPending(localStorage, storageKey);
+    if (!record || record.request !== expected)
+      throw new Error('Pending command journal changed. Reconcile before another action.');
+    checkReply(reply, { request: expected, plan: planRef ?? record.plan });
     setSubmission(reply);
     if (reply.outcome !== 'unknown') {
       localStorage.removeItem(storageKey);
-      setPending(null);
+      setPendingRecord(null);
     }
   }
   async function observe(ref: string) {
     const snapshot = await client.run(id.parse(ref));
-    setRun(run?.run_ref === ref ? acceptSnapshot(run, snapshot) : snapshot);
+    setRun(acceptSnapshot(run?.run_ref === ref ? run : null, snapshot));
+    setActionReview(null);
     setFreshness('Current as of the last explicit refresh');
   }
   return (
@@ -160,12 +201,23 @@ export function WorkflowPanel({
             !validation?.valid ||
             !current(validation) ||
             !host.features.workflow_execute ||
-            !!pending
+            !!pending ||
+            !!journalError
           }
           onClick={() =>
             void act(async () => {
-              if (!validation || !sameBinding(validation.binding, await freezeDocument(document)))
+              if (
+                !validation ||
+                !sameBinding(validation.binding, await freezeDocument(latestDocument.current))
+              )
                 throw new Error('Draft changed; validate again.');
+              if (
+                scope !== 'workflow_outputs' &&
+                (!selection.length || (scope === 'standalone_operation' && selection.length !== 1))
+              )
+                throw new Error(
+                  'Select nodes for this scope; a standalone operation requires exactly one.',
+                );
               const value = await client.plan(
                 validation.validation_ref,
                 validation.binding,
@@ -201,8 +253,14 @@ export function WorkflowPanel({
         <section>
           <h3>Review plan</h3>
           <p>
-            Plan {plan.plan_ref} · expires {plan.expires_at}
+            Plan {plan.plan_ref} · expires {plan.expires_at} (UTC; display uses approximate host
+            time)
           </p>
+          {Date.parse(plan.expires_at) <= client.hostNow() && (
+            <p className="warning" role="status">
+              Plan expired. Request a new immutable plan.
+            </p>
+          )}
           <p className="wrap">Digest {plan.digest}</p>
           {!current(plan) && (
             <p className="warning">
@@ -223,21 +281,7 @@ export function WorkflowPanel({
             }}
             label="Frozen plan scope"
           />
-          <h4>Resources and cost</h4>
-          <p>
-            {plan.cost.amount === null
-              ? 'Cost unknown'
-              : `${plan.cost.amount} ${plan.cost.currency ?? '(currency not reported)'}`}{' '}
-            · {plan.cost.uncertainty}
-          </p>
-          <JsonView
-            value={{ resources: plan.resources, cost: plan.cost, alternatives: plan.alternatives }}
-          />
-          <h4>Data export closure</h4>
-          <p>
-            These are the host-resolved inputs and destinations, including any ancestors it reports.
-          </p>
-          <JsonView value={plan.exports} />
+          <ComputeReview plan={plan} />
           <JsonView value={plan.warnings} label="Plan warnings" />
           {plan.policy_denied && (
             <p className="warning">
@@ -251,10 +295,12 @@ export function WorkflowPanel({
                 plan.policy_denied ||
                 !current(plan) ||
                 !host.features.approval_interact ||
-                Date.parse(plan.expires_at) <= Date.now()
+                Date.parse(plan.expires_at) <= client.hostNow()
               }
               onClick={() =>
                 void act(async () => {
+                  if (!sameBinding(plan.binding, await freezeDocument(latestDocument.current)))
+                    throw new Error('Draft changed; validate again.');
                   const c = await client.challenge(plan.plan_ref, plan.digest);
                   if (c.plan_ref !== plan.plan_ref || c.plan_digest !== plan.digest)
                     throw new Error('Approval challenge is bound to a different plan.');
@@ -279,18 +325,25 @@ export function WorkflowPanel({
               {(['approve', 'deny'] as const).map((decision) => (
                 <button
                   key={decision}
+                  onKeyDown={(event) => {
+                    if (event.repeat) event.preventDefault();
+                  }}
                   disabled={
                     busy ||
                     !current(plan) ||
                     plan.policy_denied ||
-                    !challenge.can_confirm ||
-                    Date.parse(challenge.expires_at) <= Date.now()
+                    (decision === 'approve' && !challenge.can_confirm) ||
+                    Date.parse(plan.expires_at) <= client.hostNow() ||
+                    Date.parse(challenge.expires_at) <= client.hostNow()
                   }
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') e.preventDefault();
-                  }}
                   onClick={() =>
                     void act(async () => {
+                      if (
+                        !sameBinding(plan.binding, await freezeDocument(latestDocument.current)) ||
+                        Date.parse(challenge.expires_at) <= client.hostNow() ||
+                        Date.parse(plan.expires_at) <= client.hostNow()
+                      )
+                        throw new Error('Draft changed or approval scope expired.');
                       const value = await client.confirm(
                         challenge.challenge_ref,
                         plan.plan_ref,
@@ -318,24 +371,25 @@ export function WorkflowPanel({
             disabled={
               busy ||
               !!pending ||
+              !!journalError ||
               submission?.outcome === 'accepted' ||
               !current(plan) ||
               plan.policy_denied ||
-              Date.parse(plan.expires_at) <= Date.now() ||
+              Date.parse(plan.expires_at) <= client.hostNow() ||
               (plan.authorization_required &&
                 (!approval?.authority_ref ||
                   approval.decision !== 'approved' ||
-                  Date.parse(approval.expires_at) <= Date.now()))
+                  Date.parse(approval.expires_at) <= client.hostNow()))
             }
             onClick={() =>
               void act(async () => {
                 if (
-                  !sameBinding(plan.binding, await freezeDocument(document)) ||
-                  Date.parse(plan.expires_at) <= Date.now()
+                  !sameBinding(plan.binding, await freezeDocument(latestDocument.current)) ||
+                  Date.parse(plan.expires_at) <= client.hostNow()
                 )
                   throw new Error('Draft changed or plan expired.');
                 const request = randomId();
-                retain(request);
+                retain(request, plan.plan_ref);
                 setSubmission({
                   client_request_id: request,
                   plan_ref: plan.plan_ref,
@@ -351,13 +405,18 @@ export function WorkflowPanel({
                 );
                 if (reply.plan_ref !== plan.plan_ref)
                   throw new Error('Submission plan mismatch. Outcome remains unknown.');
-                resolve(reply, request);
+                resolve(reply, request, plan.plan_ref);
               })
             }
           >
             Submit reviewed plan
           </button>
         </section>
+      )}
+      {journalError && (
+        <p role="alert" className="warning">
+          {journalError}
+        </p>
       )}
       {pending && (
         <section className="warning">
@@ -397,12 +456,25 @@ export function WorkflowPanel({
                 const page = await client.runs(runOffset ?? 0);
                 if (page.next_offset !== null && page.next_offset <= (runOffset ?? 0))
                   throw new Error('Run paging did not advance.');
-                setRuns((old) => [...old, ...page.runs].slice(-1000));
+                setRuns((old) =>
+                  [...new Map([...old, ...page.runs].map((r) => [r.run_ref, r])).values()].slice(
+                    -1000,
+                  ),
+                );
                 setRunOffset(page.next_offset);
               })
             }
           >
             Load run references
+          </button>
+          <button
+            disabled={busy || !host.features.run_observe}
+            onClick={() => {
+              setRuns([]);
+              setRunOffset(0);
+            }}
+          >
+            Restart run listing
           </button>
           <label className="field">
             Run reference
@@ -466,12 +538,58 @@ export function WorkflowPanel({
           <p className="muted">
             Manual snapshots; no background polling. Closing this view does not stop the host run.
           </p>
-          <JsonView value={run.attempts} label="Node attempt history" />
+          <table>
+            <caption>Node attempt history</caption>
+            <thead>
+              <tr>
+                <th>Node / attempt</th>
+                <th>State</th>
+                <th>Progress</th>
+                <th>Result</th>
+              </tr>
+            </thead>
+            <tbody>
+              {run.attempts.map((attempt) => (
+                <tr key={attempt.attempt_id}>
+                  <td>
+                    <Text>{attempt.node_id}</Text>
+                    <br />
+                    <Text>{attempt.attempt_id}</Text>
+                  </td>
+                  <td>
+                    <Text>{attempt.state}</Text>
+                  </td>
+                  <td>
+                    {attempt.progress === null
+                      ? 'Indeterminate'
+                      : `${attempt.progress}% (${attempt.progress_kind})`}
+                  </td>
+                  <td>
+                    {attempt.result_ref ? (
+                      <button
+                        disabled={busy || !host.features.result_inspect || !onResult}
+                        onClick={() =>
+                          void act(async () => {
+                            const result = await client.runResult(run, attempt);
+                            onResult?.(result);
+                          })
+                        }
+                      >
+                        Inspect {attempt.result_ref}
+                      </button>
+                    ) : (
+                      'No result reported'
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
           <JsonView value={run.events} label="Recent run events; at most 500" />
           {run.actions.map((action) => (
             <button
               key={action}
-              disabled={busy || !!pending}
+              disabled={busy || !!pending || !!journalError}
               onClick={() => setActionReview(action)}
             >
               Review {action} request
@@ -484,11 +602,11 @@ export function WorkflowPanel({
                 rechecks policy. Cancellation does not imply cleanup or cost settlement.
               </p>
               <button
-                disabled={busy || !!pending}
+                disabled={busy || !!pending || !!journalError}
                 onClick={() =>
                   void act(async () => {
                     const request = randomId();
-                    retain(request);
+                    retain(request, run.plan_ref);
                     resolve(
                       await client.runAction(run.run_ref, run.revision, actionReview, request),
                       request,

@@ -1,4 +1,6 @@
-# Studio implementation notes
+# Studio 0.2 implementation notes (historical baseline)
+
+Current continuation: see [0.3 advanced integration report](u4-u7-report.md). The results below describe the original baseline only.
 
 Frontend package 0.2.0-alpha.1. Optional Python package 0.2.0a1. U0–U3 authoring and inspection preview.
 

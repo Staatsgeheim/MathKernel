@@ -1,6 +1,6 @@
 # MathKernel Studio
 
-Studio is an optional, local browser workbench for MathKernel. This branch contains the **0.2.0 U0–U3 authoring and inspection implementation**. It is not a general visual workflow runtime: execution remains capability-gated behind an external authoritative workflow service.
+Studio is an optional, local browser workbench for MathKernel. This branch contains the **0.3.0 authoring, inspection and advanced integration preview**. It is not a general visual workflow runtime: execution remains capability-gated behind an external authoritative workflow service.
 
 Use the operation palette to explore your installed kernel, create input drafts, arrange nodes, inspect parameters, and save `.mkstudio.json` documents. Canvas and outline use the same edit commands. Existing host results can be published for read-only inspection; files opened in the browser remain untrusted candidates.
 
@@ -129,3 +129,29 @@ python -m pip wheel --no-deps ./ui/studio/host -w dist
 ```
 
 The main shell uses `script-src 'self'`; schema validation explicitly disables JIT. React Flow uses a documented style-attribute allowance, `style-src 'self' 'unsafe-inline'`. The opaque-origin viewer is a self-contained file whose single script is authorized by an exact SHA-256 CSP hash; it has no connection permission. Authentication state exists only in a short-lived HttpOnly/SameSite cookie and host memory. This is a loopback application, not a remotely exposed production service or a completed security audit.
+
+
+## Advanced workflow review
+
+With an explicitly supplied `studio-workflow/1` service, **Workflow plans and run observations** supports frozen validation, scoped immutable plans, host approval challenges, submission, reconciliation, and manual run snapshots. The default host still cannot execute workflows. To exercise synthetic contracts:
+
+```bash
+mathkernel-studio --test-host --test-workflow
+mathkernel-studio --test-host --test-workflow --workflow-fault submission_unknown
+```
+
+Review the resolved operations, assumptions, outputs, resource units, price source, exclusions, and data export closure before confirming. Unknown price is not zero; an estimate is not a hard cap. Approximate host time disables expired controls, while the host must enforce actual expiry and authorization. Confirmation supports intentional keyboard activation; held-key repeats are ignored.
+
+Unknown command outcomes retain only request and plan references in browser storage. Reopen the panel and **Check existing request**; never submit a replacement to discover whether the first request ran. Recovery storage failures block submission. Web Locks coordinate command review across tabs; browsers without Web Locks can inspect but cannot submit. Imported drafts contain no approval authority. Run result buttons check the frozen run/document/revision/node mapping before opening the evidence inspector.
+
+Subworkflow inspection displays immutable revision/digest and explicit external-to-internal ports. A changed digest at the same revision is refused. Inspecting another version does not rebind the draft. Fragments remain independent copies; history compares edge identities and output sets without treating array reordering as a semantic edit.
+
+## Audio audition
+
+Existing `mathkernel-sonify/1.0` documents can open an isolated sine-event audition. Playback starts only after **Play** inside the viewer; Pause, Stop, seek, volume and mute are available. Closing the viewer releases audio resources. At most 500 resolved events over 60 seconds are supported, with frequencies from 20–20,000 Hz and gains from 0–1. Unresolved mappings, phase/timbre transforms and unsupported values remain source-only.
+
+Audition is explicitly a presentation preview, not the exported PCM waveform: gain is divided by event count to bound total amplitude, and master volume starts at 10%. No normalization, mathematical analysis or mapping is rerun. The source event table retains original values, and the source export is unchanged.
+
+## Current release evidence
+
+See `notes/u4-u7-report.md` for exact changes, tests and outstanding gates. U4 real workflow execution and U6 real compute policy remain blocked by absent host services. U7 remains incomplete: this build has automated contract/component and packaging evidence, but no fresh real-browser, Windows/macOS screen-reader, localization or reference-laptop performance qualification. Do not treat the synthetic host or DOM test environment as those release gates.

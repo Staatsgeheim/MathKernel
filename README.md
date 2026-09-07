@@ -919,6 +919,11 @@ warnings, and imported result labels remain untrusted. The base Python/MCP insta
 is unaffected; Studio's optional package serves locally bundled assets and requires
 Node/npm only at build time.
 
+Supported inline scientific plots and resolved audio-event auditions use an isolated
+viewer with source-data alternatives. Optional workflow-host review includes plan
+and approval binding, unknown-outcome reconciliation, and separate run lifecycle
+observations; the bundled host does not provide a workflow runtime.
+
 See the [Studio guide](ui/studio/README.md) for installation, keyboard and
 non-dragging editing, the protected loopback connection, result publishing, and
 current support limits.

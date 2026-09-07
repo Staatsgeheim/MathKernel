@@ -1,5 +1,5 @@
 import { randomId } from '../security/identity';
-import { Component, useEffect, useRef, useState, type ReactNode } from 'react';
+import { Component, useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { displayText } from '../security/json';
 export function Text({ children }: { children: string }) {
   return <>{displayText(children)}</>;
@@ -32,6 +32,7 @@ export function Dialog({
   children: ReactNode;
   onClose: () => void;
 }) {
+  const titleId = useId();
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
@@ -48,10 +49,10 @@ export function Dialog({
         event.preventDefault();
         onClose();
       }}
-      aria-labelledby="dialog-title"
+      aria-labelledby={titleId}
     >
       <header className="panel-header">
-        <h2 id="dialog-title">{title}</h2>
+        <h2 id={titleId}>{title}</h2>
         <button aria-label="Close dialog" onClick={onClose}>
           Close
         </button>

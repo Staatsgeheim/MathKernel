@@ -4,6 +4,8 @@ import type { HostCommandService } from './client';
 import type { Handshake } from './contracts';
 import type { DraftNode } from '../editor/document';
 import { id } from '../editor/document';
+import type { z } from '../security/schema';
+import { subworkflowSchema } from './workflow';
 import type { Command } from '../editor/commands';
 
 export function ObjectPicker({
@@ -29,7 +31,10 @@ export function ObjectPicker({
     [busy, setBusy] = useState(false),
     [error, setError] = useState('');
   const [subRef, setSubRef] = useState(''),
-    [subworkflow, setSubworkflow] = useState<unknown>(null);
+    [subworkflow, setSubworkflow] = useState<z.infer<typeof subworkflowSchema> | null>(null);
+  const [previousBoundary, setPreviousBoundary] = useState<z.infer<
+    typeof subworkflowSchema
+  > | null>(null);
   return (
     <Dialog title="Objects and host subworkflow boundaries" onClose={onClose}>
       <p>
@@ -114,7 +119,17 @@ export function ObjectPicker({
         onClick={async () => {
           setBusy(true);
           try {
-            setSubworkflow(await client.subworkflow(id.parse(subRef)));
+            const next = await client.subworkflow(id.parse(subRef));
+            if (
+              subworkflow?.reference === next.reference &&
+              subworkflow.revision === next.revision &&
+              subworkflow.digest !== next.digest
+            )
+              throw new Error(
+                'Host changed a subworkflow digest at the same revision. Reconnect before trusting this boundary.',
+              );
+            setPreviousBoundary(subworkflow);
+            setSubworkflow(next);
           } catch (e) {
             setError(String(e));
             onHostError(e);
@@ -131,7 +146,61 @@ export function ObjectPicker({
         </p>
       )}
       {subworkflow !== null && (
-        <JsonView value={subworkflow} label="Host subworkflow boundary mapping" />
+        <section>
+          <h4>
+            <Text>{subworkflow.title}</Text> · revision {subworkflow.revision}
+          </h4>
+          <p>
+            {subworkflow.read_only
+              ? 'Read-only host boundary'
+              : 'Host permits editing; this client exposes inspection only'}
+            . This does not inline or execute its contents.
+          </p>
+          <p className="wrap">Digest: {subworkflow.digest}</p>
+          <table>
+            <caption>External to internal port mapping</caption>
+            <thead>
+              <tr>
+                <th>External port</th>
+                <th>Internal node</th>
+                <th>Internal port</th>
+              </tr>
+            </thead>
+            <tbody>
+              {subworkflow.boundary.map((b, i) => (
+                <tr key={i}>
+                  <td>
+                    <Text>{b.external_port}</Text>
+                  </td>
+                  <td>
+                    <Text>{b.internal_node}</Text>
+                  </td>
+                  <td>
+                    <Text>{b.internal_port}</Text>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <JsonView value={subworkflow.required_capabilities} label="Required host capabilities" />
+          <p>
+            <Text>{subworkflow.description}</Text>
+          </p>
+          {previousBoundary && (
+            <details>
+              <summary>
+                Previously inspected boundary: {previousBoundary.reference} ·{' '}
+                {previousBoundary.revision}
+              </summary>
+              <p>
+                {previousBoundary.digest === subworkflow.digest
+                  ? 'Digest unchanged.'
+                  : 'Boundary digest changed. Existing drafts are not rebound automatically.'}
+              </p>
+              <JsonView value={previousBoundary} label="Previous immutable boundary" />
+            </details>
+          )}
+        </section>
       )}
       {error && (
         <p className="warning" role="alert">

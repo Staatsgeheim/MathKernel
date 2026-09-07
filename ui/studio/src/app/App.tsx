@@ -1123,6 +1123,11 @@ export function App() {
           client={client}
           onClose={() => setWorkflowOpen(false)}
           onHostError={hostError}
+          onResult={(result) => {
+            setObservation(result);
+            setMode('inspect');
+            setWorkflowOpen(false);
+          }}
         />
       )}
       {connection && (

@@ -68,8 +68,13 @@ export function compareDocuments(before: StudioDocument, after: StudioDocument):
           field === 'label' ? 'presentation' : field === 'input_bindings' ? 'binding' : 'semantic',
         );
   }
-  for (const field of ['edges', 'desired_outputs'] as const)
-    compare(field, before.authoring[field], after.authoring[field], 'semantic');
+  const leftEdges = new Map(before.authoring.edges.map((e) => [e.id, e]));
+  const rightEdges = new Map(after.authoring.edges.map((e) => [e.id, e]));
+  for (const key of new Set([...leftEdges.keys(), ...rightEdges.keys()]))
+    compare(`edges.${key}`, leftEdges.get(key), rightEdges.get(key), 'semantic');
+  const outputs = (d: StudioDocument) =>
+    d.authoring.desired_outputs.map((o) => `${o.node_id}:${o.port_id}`).sort();
+  compare('desired_outputs', outputs(before), outputs(after), 'semantic');
   compare('host_binding', before.host_binding, after.host_binding, 'binding');
   compare('title', before.identity.title, after.identity.title, 'presentation');
   for (const field of ['node_positions', 'groups', 'viewport'] as const)

@@ -1,4 +1,6 @@
 import { viewerSchema } from './contracts';
+import { audioSchema } from './audio';
+import { renderAudio } from './audioFrame';
 let initialized = false;
 const announce = () => parent.postMessage({ kind: 'studio-view-ready' }, '*');
 const readiness = window.setInterval(() => {
@@ -18,6 +20,15 @@ window.addEventListener('message', (event) => {
   window.clearInterval(readiness);
   const port = event.ports[0]!,
     channel = event.data.channel;
+  const audio = audioSchema.safeParse(event.data.data);
+  if (audio.success) {
+    let seq = 0;
+    renderAudio(audio.data, (kind, text) =>
+      port.postMessage({ channel, artifact: audio.data.artifact, seq: ++seq, kind, text }),
+    );
+    window.addEventListener('pagehide', () => port.close(), { once: true });
+    return;
+  }
   const parsed = viewerSchema.safeParse(event.data.data);
   if (!parsed.success) {
     document.body.textContent =
@@ -102,6 +113,13 @@ window.addEventListener('message', (event) => {
   caption.textContent =
     'Coordinate text alternative — first 100 points; full source remains in the parent inspector';
   table.append(caption);
+  const header = table.createTHead().insertRow();
+  for (const name of data.kind === 'plot2d' ? ['Point', 'x', 'y'] : ['Point', 'x', 'y', 'z']) {
+    const cell = document.createElement('th');
+    cell.scope = 'col';
+    cell.textContent = name;
+    header.append(cell);
+  }
   const body = document.createElement('tbody');
   for (const [index, p] of points.slice(0, 100).entries()) {
     const row = document.createElement('tr'),

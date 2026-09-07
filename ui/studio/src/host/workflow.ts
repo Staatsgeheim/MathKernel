@@ -212,6 +212,20 @@ export function sameBinding(a: Frozen, b: Frozen) {
   );
 }
 export function acceptSnapshot(previous: Run | null, incoming: Run): Run {
+  // A snapshot is authoritative only if its own entity facts are internally consistent.
+  const attempts = new Map<string, Run['attempts'][number]>();
+  for (const attempt of incoming.attempts) {
+    if (attempts.has(attempt.attempt_id)) throw new Error('Duplicate attempt identity.');
+    attempts.set(attempt.attempt_id, attempt);
+  }
+  const events = new Map<string, Run['events'][number]>();
+  for (const event of incoming.events) {
+    const duplicate = events.get(event.event_id);
+    if (duplicate && JSON.stringify(duplicate) !== JSON.stringify(event))
+      throw new Error('Conflicting event identity requires host resynchronization.');
+    events.set(event.event_id, event);
+  }
+  incoming = { ...incoming, events: [...events.values()] };
   if (!previous) return incoming;
   if (
     previous.run_ref !== incoming.run_ref ||
@@ -233,6 +247,13 @@ export function acceptSnapshot(previous: Run | null, incoming: Run): Run {
     const old = previous.attempts.find((a) => a.attempt_id === attempt.attempt_id);
     if (old && (old.node_id !== attempt.node_id || attempt.revision < old.revision))
       throw new Error('Attempt identity/revision regressed.');
+    if (old && old.revision === attempt.revision && JSON.stringify(old) !== JSON.stringify(attempt))
+      throw new Error('Conflicting attempt facts at a fixed revision.');
+  }
+  for (const event of incoming.events) {
+    const old = previous.events.find((e) => e.event_id === event.event_id);
+    if (old && JSON.stringify(old) !== JSON.stringify(event))
+      throw new Error('Conflicting event facts across snapshots.');
   }
   return {
     ...incoming,

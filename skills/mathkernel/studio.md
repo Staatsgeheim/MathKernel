@@ -35,12 +35,22 @@ is metadata, not evidence; this preview displays reconstructed receipt bytes as
 source data without inventing a fresh claim summary. Use a full existing host
 result for admitted evidence inspection.
 
-Viewers currently render bounded escaped text and structured data. HTML/SVG and
-proof text stay inert; active plots/audio and remote-compute/approval interfaces
-are deferred. A fixture label or an attractive graph is not live integration.
+Viewers render bounded inline plots/point clouds/trajectories and an isolated
+resolved sine-event audio audition with explicit playback controls. HTML/SVG and
+proof text stay inert. Audio audition is not the exported PCM waveform; it performs
+no mappings or mathematical analysis. The default host still has no compute service. A fixture label or an attractive graph is not live integration.
 The `--test-host` and `--fault` modes must remain visibly synthetic.
 
 Recovery copies are scoped to host/workspace/document, version checked, opt-in,
 and distinct from backups, host saves and durable artifacts. Restoring a document
 never reconnects, runs, approves, or cancels anything. Imported schema versions are
 validated, not silently migrated.
+
+
+Advanced workflow UI is gated by `studio-workflow/1`. Unknown outcomes retain
+request/plan identity only; use read-only reconciliation before another submission.
+Never clear recovery state just to enable Run. Approval is host-issued, expires,
+and binds the immutable plan; unknown prices and resource cleanup remain separate
+from result readiness. `--test-workflow` is synthetic, not execution evidence.
+Subworkflow boundary inspection never rebinds or inlines a draft automatically.
+Consult `ui/studio/notes/u4-u7-report.md` for the current tested support boundary.

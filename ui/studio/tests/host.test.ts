@@ -228,3 +228,47 @@ describe('host observation boundaries', () => {
     await expect(verifyPages(text, text.length, '0'.repeat(64))).rejects.toThrow('integrity');
   });
 });
+
+it('run result inspection rejects an unrelated standalone result even from the same host', async () => {
+  const client = new HostCommandService();
+  vi.spyOn(client, 'result').mockResolvedValue(result);
+  const run = runSchema.parse({
+    run_ref: 'run',
+    binding: { document_id: 'doc', draft_revision: 1, document_digest: 'a'.repeat(64) },
+    plan_ref: 'plan',
+    revision: 1,
+    cursor: 'cursor',
+    observed_at: '2026-09-07T00:00:00Z',
+    execution: 'ready',
+    verification: 'unknown',
+    artifacts: 'ready',
+    resources: 'unknown',
+    cost: 'unknown',
+    warnings: [],
+    attempts: [],
+    events: [],
+    actions: [],
+  });
+  const attempt = {
+    node_id: 'node',
+    attempt_id: 'attempt',
+    revision: 1,
+    state: 'ready',
+    result_ref: result.binding.result_ref,
+    progress: null,
+    progress_kind: 'indeterminate' as const,
+    observed_at: run.observed_at,
+  };
+  await expect(client.runResult(run, attempt)).rejects.toThrow('frozen run');
+  vi.mocked(client.result).mockResolvedValue({
+    ...result,
+    binding: {
+      ...result.binding,
+      run_ref: 'run',
+      document_id: 'doc',
+      draft_revision: 1,
+      node_id: 'node',
+    },
+  });
+  expect((await client.runResult(run, attempt)).binding.node_id).toBe('node');
+});
