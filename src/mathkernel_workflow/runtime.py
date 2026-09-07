@@ -358,6 +358,10 @@ class WorkflowRuntime:
                         a.update(state='skipped' if a['state'] == 'pending' else outcome, revision=a['revision'] + 1, observed_at=now())
                 if outcome != 'completed':
                     run['warnings'].append(message)
+                if outcome in {'timed out', 'cancelled', 'interrupted'}:
+                    # Execution stopped without a finished evaluation. Partial node
+                    # snapshots stay on the artifact/attempt axes only.
+                    run['verification'] = 'not evaluated'
                 self._event(run, 'terminal', message)
                 self._put('runs', ref, run)
                 self.db.commit()
