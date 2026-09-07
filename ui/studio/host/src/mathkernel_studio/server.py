@@ -70,7 +70,20 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(payload)
 
-    def error(self, status, code):
+    def discard_body(self):
+        lengths = self.headers.get_all("Content-Length") or []
+        if len(lengths) != 1 or not re.fullmatch(r"[0-9]{1,8}", lengths[0]):
+            return
+        remaining = int(lengths[0])
+        while remaining > 0:
+            chunk = self.rfile.read(min(remaining, 65536))
+            if not chunk:
+                break
+            remaining -= len(chunk)
+
+    def error(self, status, code, *, drain=False):
+        if drain:
+            self.discard_body()
         self.respond(status, json.dumps({"error": code}).encode())
 
     def origin_ok(self, mutation=False):
@@ -105,7 +118,7 @@ class Handler(BaseHTTPRequestHandler):
             self.server.rate_window, self.server.rate_count = now, 0
         self.server.rate_count += 1
         if self.server.rate_count > 120:
-            self.error(429, 'request_rate_limit')
+            self.error(429, 'request_rate_limit', drain=True)
             return False
         return True
 
@@ -128,27 +141,28 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         if not self.origin_ok(mutation=True):
-            self.error(403, "origin_rejected")
+            self.error(403, "origin_rejected", drain=True)
             return
         if not self.rate_ok(): return
         if self.path == '/studio/api/session/disconnect':
             if not self.authenticated() or self.headers.get('X-Studio-Action') != 'disconnect':
-                self.error(403, 'session_required'); return
+                self.error(403, 'session_required', drain=True); return
+            self.discard_body()
             self.server.session = None
             self.respond(200, b'{"disconnected":true}', cookie='mkstudio_session=; HttpOnly; SameSite=Strict; Path=/studio/; Max-Age=0')
             return
         action = self.path.removeprefix('/studio/api/')
         if self.server.service is not None and action in ACTION_FIELDS:
-            if not self.authenticated(): self.error(401, 'session_required'); return
+            if not self.authenticated(): self.error(401, 'session_required', drain=True); return
             if not self.server.service.capabilities()['features'].get(ACTION_FEATURES[action], False):
-                self.error(403, 'feature_unavailable'); return
+                self.error(403, 'feature_unavailable', drain=True); return
             if self.headers.get('Content-Type') != 'application/json' or self.headers.get('X-Studio-Action') != action:
-                self.error(415, 'invalid_command_request'); return
+                self.error(415, 'invalid_command_request', drain=True); return
             lengths = self.headers.get_all('Content-Length') or []
             if len(lengths) != 1 or not re.fullmatch(r'[0-9]{1,8}', lengths[0]) or self.headers.get('Transfer-Encoding'):
-                self.error(400, 'invalid_length'); return
+                self.error(400, 'invalid_length', drain=True); return
             length = int(lengths[0])
-            if not 0 < length <= 10 * 1024 * 1024 + 8192: self.error(413, 'command_budget'); return
+            if not 0 < length <= 10 * 1024 * 1024 + 8192: self.error(413, 'command_budget', drain=True); return
             try:
                 request_id = check_id(self.headers.get('X-Studio-Request', ''))
                 payload = parse_command(self.rfile.read(length), action)
@@ -160,18 +174,18 @@ class Handler(BaseHTTPRequestHandler):
             except Exception: self.error(500, 'command_outcome_unknown')
             return
         if self.path != "/studio/api/session":
-            self.error(405, "read_only_host")
+            self.error(405, "read_only_host", drain=True)
             return
         if self.headers.get("Content-Type") != "application/json" or self.headers.get("X-Studio-Action") != "connect":
-            self.error(415, "invalid_session_request")
+            self.error(415, "invalid_session_request", drain=True)
             return
         lengths = self.headers.get_all("Content-Length") or []
         if len(lengths) != 1 or not re.fullmatch(r"[0-9]{1,4}", lengths[0]) or self.headers.get("Transfer-Encoding"):
-            self.error(400, "invalid_length")
+            self.error(400, "invalid_length", drain=True)
             return
         length = int(lengths[0])
         if not 1 <= length <= 1024:
-            self.error(413, "session_request_limit")
+            self.error(413, "session_request_limit", drain=True)
             return
         try:
             pairs = json.loads(self.rfile.read(length), object_pairs_hook=lambda p: p)

@@ -1,19 +1,24 @@
 name: Studio preview
 on:
   push:
-    paths: ['ui/studio/**', 'src/mathkernel_workflow/**', 'tests/test_workflow_runtime.py', 'pyproject.toml', '.github/workflows/studio.yml']
+    paths: ['ui/studio/**', 'src/mathkernel_workflow/**', 'tests/test_workflow_runtime.py', 'pyproject.toml', '.github/workflows/studio.yml', '.gitattributes']
   pull_request:
-    paths: ['ui/studio/**', 'src/mathkernel_workflow/**', 'tests/test_workflow_runtime.py', 'pyproject.toml', '.github/workflows/studio.yml']
+    paths: ['ui/studio/**', 'src/mathkernel_workflow/**', 'tests/test_workflow_runtime.py', 'pyproject.toml', '.github/workflows/studio.yml', '.gitattributes']
 permissions:
   contents: read
 jobs:
   studio:
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+        env:
+          GIT_CONFIG_COUNT: 1
+          GIT_CONFIG_KEY_0: core.autocrlf
+          GIT_CONFIG_VALUE_0: input
       - uses: actions/setup-node@v4
         with:
           node-version: '24'

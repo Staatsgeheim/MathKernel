@@ -1,0 +1,2 @@
+# Windows runners default to CRLF; Prettier and viewer hashes require LF.
+ui/studio/** text eol=lf

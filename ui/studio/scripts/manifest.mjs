@@ -13,9 +13,12 @@ const packages = Object.entries(lock.packages)
     development: !!info.dev,
   }));
 await mkdir(root, { recursive: true });
-const viewerScript = await readFile(path.join(root, 'viewer', 'viewer.js'), 'utf8');
-const viewerStyle = await readFile(path.join(root, 'viewer.css'), 'utf8');
-let viewerHtml = await readFile(path.join(root, 'viewer.html'), 'utf8');
+const viewerScript = (await readFile(path.join(root, 'viewer', 'viewer.js'), 'utf8')).replace(
+  /\r\n/g,
+  '\n',
+);
+const viewerStyle = (await readFile(path.join(root, 'viewer.css'), 'utf8')).replace(/\r\n/g, '\n');
+let viewerHtml = (await readFile(path.join(root, 'viewer.html'), 'utf8')).replace(/\r\n/g, '\n');
 viewerHtml = viewerHtml
   .replace(
     '<link rel="stylesheet" href="/studio/viewer.css">',
@@ -30,11 +33,13 @@ if (
   viewerHtml.includes('<script defer src="/studio/viewer/viewer.js"></script>')
 )
   throw new Error('Viewer assets were not inlined');
-await writeFile(path.join(root, 'viewer.html'), viewerHtml);
-const viewerHash = createHash('sha256').update(viewerScript).digest('base64');
+const script = viewerHtml.match(/<script>([\s\S]*?)<\/script>/);
+if (!script) throw new Error('Inlined viewer script is missing');
+await writeFile(path.join(root, 'viewer.html'), viewerHtml.replace(/\r\n/g, '\n'));
+const viewerHash = createHash('sha256').update(script[1]).digest('base64');
 await writeFile(
   path.join(root, 'viewer-csp.txt'),
-  `default-src 'none'; script-src 'sha256-${viewerHash}'; style-src 'unsafe-inline'; connect-src 'none'; object-src 'none'; base-uri 'none'; frame-ancestors 'self'; form-action 'none'`,
+  `default-src 'none'; script-src 'sha256-${viewerHash}'; style-src 'unsafe-inline'; connect-src 'none'; object-src 'none'; base-uri 'none'; frame-ancestors 'self'; form-action 'none'\n`,
 );
 const notices = [];
 for (const [dir, info] of Object.entries(lock.packages)) {
