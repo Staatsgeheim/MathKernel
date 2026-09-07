@@ -1,3 +1,4 @@
+import { exactExample } from '../editor/examples';
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ConnectDialog } from '../editor/ConnectDialog';
 import { descriptor, execute, history, redo, undo, type Command } from '../editor/commands';
@@ -36,7 +37,7 @@ import { ObjectPicker } from '../host/ObjectPicker';
 const client = new HostCommandService();
 const Canvas = lazy(() => import('../editor/Canvas').then((m) => ({ default: m.Canvas })));
 const NO_RUN =
-  'Workflow execution requires a compatible host providing validation, planning and execution. The bundled MathKernel host does not provide this service.';
+  'Workflow execution requires a compatible host providing validation, planning and execution. Connect to the local workflow host to review an executable plan.';
 export function App() {
   const [state, setState] = useState(() => history(emptyDocument()));
   const [selected, setSelected] = useState<string[]>([]);
@@ -429,24 +430,50 @@ export function App() {
           </button>
           <button
             disabled={!host?.features.workflow_validate || !host.extensions}
-            title={NO_RUN}
+            title={
+              host?.features.workflow_execute
+                ? 'Review a frozen plan on the host before execution.'
+                : NO_RUN
+            }
             onClick={() => setWorkflowOpen(true)}
           >
             Validate with host
           </button>
           <button
             disabled={!host?.features.workflow_execute || !host.extensions}
-            title={NO_RUN}
+            title={
+              host?.features.workflow_execute
+                ? 'Review a frozen plan on the host before execution.'
+                : NO_RUN
+            }
             onClick={() => setWorkflowOpen(true)}
           >
             Plan
           </button>
           <button
             disabled={!host?.features.workflow_execute || !host.extensions}
-            title={NO_RUN}
+            title={
+              host?.features.workflow_execute
+                ? 'Review a frozen plan on the host before execution.'
+                : NO_RUN
+            }
             onClick={() => setWorkflowOpen(true)}
           >
             Run workflow
+          </button>
+          <button
+            disabled={!host?.features.workflow_execute || doc.authoring.nodes.length > 0}
+            onClick={() => {
+              try {
+                commit(history(exactExample(catalog)));
+                setSelected([]);
+                setMessage('Example draft created. Validate and review its plan before running.');
+              } catch (error) {
+                setMessage(error instanceof Error ? error.message : 'Example unavailable.');
+              }
+            }}
+          >
+            Create exact example
           </button>
           <button disabled={!host} onClick={() => setWorkflowOpen(true)}>
             Plans & recorded runs

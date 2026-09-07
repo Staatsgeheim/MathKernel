@@ -12,13 +12,14 @@ from .source import check_id
 
 ACTION_FIELDS = {
     'workflow/validate': {'document', 'binding'},
+    'workflow/publish': {'validation_ref', 'binding'},
     'workflow/plan': {'validation_ref', 'binding', 'scope', 'selected_nodes'},
     'workflow/submit': {'plan_ref', 'plan_digest', 'authority_ref', 'client_request_id'},
     'approval/challenge': {'plan_ref', 'plan_digest'},
     'approval/confirm': {'challenge_ref', 'plan_ref', 'plan_digest', 'decision'},
     'runs/action': {'run_ref', 'revision', 'action', 'client_request_id'},
 }
-ACTION_FEATURES = {'workflow/validate': 'workflow_validate', 'workflow/plan': 'workflow_execute',
+ACTION_FEATURES = {'workflow/publish': 'workflow_validate', 'workflow/validate': 'workflow_validate', 'workflow/plan': 'workflow_execute',
     'workflow/submit': 'workflow_execute', 'approval/challenge': 'approval_interact',
     'approval/confirm': 'approval_interact', 'runs/action': 'run_observe'}
 

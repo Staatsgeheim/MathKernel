@@ -1,3 +1,5 @@
+> Historical 0.3 checkpoint. Superseded for execution and local policy by [the 0.4 local execution report](local-execution-report.md).
+
 # Studio 0.3 advanced integration preview
 
 Grounded on live `Staatsgeheim/MathKernel`, branch `mathkernel-studio`, commit

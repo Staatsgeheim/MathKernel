@@ -906,23 +906,22 @@ objects and exported as a single self-contained file.
 
 ## MathKernel Studio
 
-MathKernel Studio is an optional local browser workbench, currently available as an
-**authoring and inspection preview** on the Studio development branch. It provides
-operation discovery, canvas and outline editing, exact/numerical input drafts,
-undo/redo, inert `.mkstudio.json` import/export, browser recovery, and read-only
-inspection of existing results and per-claim evidence.
+MathKernel Studio is an optional local browser workbench on the Studio development
+branch. The **0.4 alpha** provides canvas/outline authoring, exact-value inputs,
+recovery, evidence inspection, isolated plot/audio viewers, and real local workflow
+execution through the separate `mathkernel_workflow` backend.
 
-Studio documents describe authoring intent. The current preview does not execute
-visual workflows: validation, planning and scheduling require a separately supplied
-workflow-capable host. Legacy catalog entries retain their incomplete-metadata
-warnings, and imported result labels remain untrusted. The base Python/MCP install
-is unaffected; Studio's optional package serves locally bundled assets and requires
-Node/npm only at build time.
+The backend validates and freezes supported graphs, presents immutable plans,
+enforces operator policy and session-bound approval, and supervises kernel worker
+processes. Durable requests and result snapshots survive browser disconnects;
+interrupted host processes are never automatically replayed. Fifteen explicit
+symbolic/matrix adapters and saved self-contained subworkflows are supported.
+Partial legacy catalog entries and unsupported targets remain capability-gated.
+Imported result labels remain untrusted; kernel evidence is preserved.
 
-Supported inline scientific plots and resolved audio-event auditions use an isolated
-viewer with source-data alternatives. Optional workflow-host review includes plan
-and approval binding, unknown-outcome reconciliation, and separate run lifecycle
-observations; the bundled host does not provide a workflow runtime.
+The optional Studio wheel bundles its assets; Node/npm are build-time tools only.
+The Python/MCP package does not import Studio. This is a tested local execution
+alpha; full browser/accessibility/platform qualification remains outstanding.
 
 See the [Studio guide](ui/studio/README.md) for installation, keyboard and
 non-dragging editing, the protected loopback connection, result publishing, and

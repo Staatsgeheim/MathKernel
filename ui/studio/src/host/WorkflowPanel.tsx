@@ -54,6 +54,7 @@ export function WorkflowPanel({
     [error, setError] = useState(''),
     [freshness, setFreshness] = useState('Not observed');
   const [scope, setScope] = useState(host.extensions?.scopes[0] ?? 'workflow_outputs');
+  const [published, setPublished] = useState('');
   const [reference, setReference] = useState('');
   const storageKey = `mk-studio-pending:${host.host_instance_id}:${host.workspace_id}`;
   const [journalError, setJournalError] = useState('');
@@ -177,6 +178,30 @@ export function WorkflowPanel({
         >
           Validate frozen draft
         </button>
+        <button
+          disabled={
+            busy ||
+            !validation?.valid ||
+            !current(validation) ||
+            !host.extensions?.subworkflows ||
+            host.test_host
+          }
+          onClick={() =>
+            void act(async () => {
+              if (
+                !validation ||
+                !sameBinding(validation.binding, await freezeDocument(latestDocument.current))
+              )
+                throw new Error('Draft changed; validate again.');
+              const value = await client.publish(validation.validation_ref, validation.binding);
+              setPublished(
+                `Saved ${value.reference} at revision ${value.revision}. Reconnect to add this immutable workflow from the catalog. Publishing does not execute it.`,
+              );
+            })
+          }
+        >
+          Publish reusable workflow
+        </button>
         <label className="field">
           Requested scope
           <select
@@ -236,6 +261,7 @@ export function WorkflowPanel({
           Request immutable plan
         </button>
       </div>
+      {published && <p role="status">{published}</p>}
       {validation && (
         <section>
           <h3>Host validation · draft {validation.binding.draft_revision}</h3>

@@ -266,9 +266,14 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="MathKernel Studio — local catalog and authoring preview")
+    parser = argparse.ArgumentParser(description="MathKernel Studio — local workflows and evidence inspection")
     parser.add_argument("--port", type=int, default=8765)
-    parser.add_argument("--host-id", default=None, help="Stable operator-chosen identity, or a fresh identity per launch")
+    parser.add_argument('--read-only', action='store_true', help='Disable the local workflow owner')
+    parser.add_argument('--state-dir', type=Path, default=Path.home()/'.mathkernel'/'studio', help='Durable local workflow state directory; one owner per directory')
+    parser.add_argument('--run-timeout', type=int, default=60, help='Local process wall-time limit in seconds')
+    parser.add_argument('--memory-mb', type=int, default=0, help='Optional POSIX process address-space limit; zero means no hard memory cap')
+    parser.add_argument('--deny-execution', action='store_true', help='Expose planning with execution denied by operator policy')
+    parser.add_argument("--host-id", default=None, help="Operator identity; otherwise persisted by the local workflow owner")
     parser.add_argument("--workspace-id", default="local")
     parser.add_argument("--test-host", action="store_true", help="Synthetic contract host; does not compute mathematics")
     parser.add_argument('--test-workflow', action='store_true', help='Enable synthetic workflow UI fixtures; requires --test-host')
@@ -286,22 +291,37 @@ def main():
         parser.error('--test-workflow requires --test-host')
     if args.workflow_fault != 'none' and not args.test_workflow:
         parser.error('--workflow-fault requires --test-workflow')
+    runtime = None
     if args.test_host:
         source = FixtureSource(args.fault)
+        from .workflow_testing import FixtureWorkflowService
+        service = FixtureWorkflowService(args.workflow_fault) if args.test_workflow else None
     else:
         from mathkernel import MathKernel
-        from .source import KernelSource
-        source = KernelSource(MathKernel(), host_id=args.host_id or "local-" + secrets.token_hex(12), workspace_id=args.workspace_id)
-    from .workflow_testing import FixtureWorkflowService
-    service = FixtureWorkflowService(args.workflow_fault) if args.test_workflow else None
-    with StudioServer(source, args.port, service=service) as server:
-        print(f"{'TEST HOST — synthetic fixtures. ' if source.test_host else ''}Open {server.origin}/studio/")
-        print(f"One-time connection code (valid 10 minutes): {server.connect_code}")
-        print("Loopback-only, read-only host; workflow execution unavailable. Ctrl+C to stop.")
-        try:
-            server.serve_forever()
-        except KeyboardInterrupt:
-            pass
+        kernel = MathKernel()
+        if args.read_only:
+            from .source import KernelSource
+            source = KernelSource(kernel, host_id=args.host_id or 'local-'+secrets.token_hex(12), workspace_id=args.workspace_id)
+            service = None
+        else:
+            from mathkernel_workflow import WorkflowRuntime, LocalPolicy
+            from .local import LocalWorkflowSource
+            runtime = WorkflowRuntime(args.state_dir, host_id=args.host_id, workspace_id=args.workspace_id,
+                policy=LocalPolicy(wall_seconds=args.run_timeout, memory_mb=args.memory_mb, enabled=not args.deny_execution))
+            service = runtime
+            source = LocalWorkflowSource(kernel, runtime)
+    try:
+        with StudioServer(source, args.port, service=service) as server:
+            print(f"{'TEST HOST — synthetic fixtures. ' if source.test_host else ''}Open {server.origin}/studio/")
+            print(f"One-time connection code (valid 10 minutes): {server.connect_code}")
+            print('Local workflow owner enabled; execution requires a reviewed plan and host approval. Ctrl+C to stop.' if runtime else 'Read-only or synthetic host. Ctrl+C to stop.')
+            try:
+                server.serve_forever()
+            except KeyboardInterrupt:
+                pass
+    finally:
+        if runtime:
+            runtime.close()
 
 
 if __name__ == "__main__":

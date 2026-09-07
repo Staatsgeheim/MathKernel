@@ -11,11 +11,14 @@ executable workflow IR. `authoring.revision` tracks mathematical-request edits;
 Exact integer and rational parameter values are strings; invalid field text remains
 recoverable. Never convert mathematical integers through browser Number.
 
-The current read-only host exposes scoped handshake/catalog/results, protected by
-an explicit one-time local code, HttpOnly/SameSite session, and Host/Origin checks.
-It has no operation invocation, workflow scheduler, compute adapter or authorization
-engine. Run remains unavailable. Do not interpret derivation history as an executable
-workflow or emulate a DAG with repeated MCP calls.
+The default local host exposes scoped handshake/catalog/results plus the separate
+`mathkernel_workflow` backend, protected by a one-time local code,
+HttpOnly/SameSite session and Host/Origin checks. It compiles only complete explicit
+`workflow.*` adapters into frozen plans. Kernel workers run under host-owned
+wall-time/concurrency policy; no browser or MCP-call loop schedules them.
+`--read-only` disables this runtime. `--deny-execution` cannot be overridden by
+approval. Persistent state binds host/workspace; restart marks active work
+interrupted without replay. Retained requests/results support reconnect.
 
 Legacy catalog schemas describe hints, not complete requiredness or individual
 ports. Missing/changed operations stay unresolved with original settings and wires.
@@ -38,7 +41,7 @@ result for admitted evidence inspection.
 Viewers render bounded inline plots/point clouds/trajectories and an isolated
 resolved sine-event audio audition with explicit playback controls. HTML/SVG and
 proof text stay inert. Audio audition is not the exported PCM waveform; it performs
-no mappings or mathematical analysis. The default host still has no compute service. A fixture label or an attractive graph is not live integration.
+no mappings or mathematical analysis. The default host supports local CPU policy only; no remote/GPU fallback is configured. A fixture label or an attractive graph is not live integration.
 The `--test-host` and `--fault` modes must remain visibly synthetic.
 
 Recovery copies are scoped to host/workspace/document, version checked, opt-in,
@@ -53,4 +56,6 @@ Never clear recovery state just to enable Run. Approval is host-issued, expires,
 and binds the immutable plan; unknown prices and resource cleanup remain separate
 from result readiness. `--test-workflow` is synthetic, not execution evidence.
 Subworkflow boundary inspection never rebinds or inlines a draft automatically.
-Consult `ui/studio/notes/u4-u7-report.md` for the current tested support boundary.
+Saved self-contained subworkflows pin content, kernel version and revision. Publication
+is not execution; unsupported external input/control constructs fail validation.
+Consult `ui/studio/notes/local-execution-report.md` for the current tested support boundary.

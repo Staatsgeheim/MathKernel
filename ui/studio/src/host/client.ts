@@ -251,6 +251,14 @@ export class HostCommandService {
     return (await this.get('workflow/validate', validationSchema, { body: { document, binding } }))
       .payload;
   }
+  async publish(validation_ref: string, binding: Frozen) {
+    this.requireWorkflow('workflow_validate');
+    if (!this.handshakeValue?.extensions?.subworkflows)
+      throw new HostError('Workflow publication unavailable.');
+    return (
+      await this.get('workflow/publish', subworkflowSchema, { body: { validation_ref, binding } })
+    ).payload;
+  }
   async plan(validation_ref: string, binding: Frozen, scope: string, selected_nodes: string[]) {
     this.requireWorkflow('workflow_execute');
     return (

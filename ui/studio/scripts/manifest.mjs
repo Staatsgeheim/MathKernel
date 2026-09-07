@@ -1,4 +1,4 @@
-import { readFile, readdir, writeFile, mkdir, copyFile, rm } from 'node:fs/promises';
+import { readFile, readdir, writeFile, mkdir, copyFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
 const root = path.resolve('host/src/mathkernel_studio/assets');
@@ -36,8 +36,6 @@ await writeFile(
   path.join(root, 'viewer-csp.txt'),
   `default-src 'none'; script-src 'sha256-${viewerHash}'; style-src 'unsafe-inline'; connect-src 'none'; object-src 'none'; base-uri 'none'; frame-ancestors 'self'; form-action 'none'`,
 );
-await rm(path.join(root, 'viewer'), { recursive: true, force: true });
-await rm(path.join(root, 'viewer.css'), { force: true });
 const notices = [];
 for (const [dir, info] of Object.entries(lock.packages)) {
   if (!dir) continue;

@@ -1,14 +1,17 @@
 name: Studio preview
 on:
   push:
-    paths: ['ui/studio/**', '.github/workflows/studio.yml']
+    paths: ['ui/studio/**', 'src/mathkernel_workflow/**', 'tests/test_workflow_runtime.py', 'pyproject.toml', '.github/workflows/studio.yml']
   pull_request:
-    paths: ['ui/studio/**', '.github/workflows/studio.yml']
+    paths: ['ui/studio/**', 'src/mathkernel_workflow/**', 'tests/test_workflow_runtime.py', 'pyproject.toml', '.github/workflows/studio.yml']
 permissions:
   contents: read
 jobs:
   studio:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -24,9 +27,13 @@ jobs:
       - run: npm run format:check && npm test && npm run build
         working-directory: ui/studio
       - run: python -m pip install -e . build
+      - run: python -m unittest discover -s tests -p test_workflow_runtime.py -v
       - run: python -m unittest discover -s ui/studio/host/tests -v
+      - run: python -m build --wheel
       - run: python -m build --wheel ui/studio/host
       - uses: actions/upload-artifact@v4
         with:
-          name: mathkernel-studio-preview
-          path: ui/studio/host/dist/*.whl
+          name: mathkernel-studio-${{ matrix.os }}
+          path: |
+            dist/*.whl
+            ui/studio/host/dist/*.whl

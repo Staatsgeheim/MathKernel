@@ -190,12 +190,26 @@ export async function freezeDocument(
       'Plan binding requires a secure browser context. Open the operator-provided loopback or HTTPS address.',
     );
   // Labels and layout do not redefine the mathematical revision.
+  // Sorted-key JSON is the shared Python/TypeScript digest contract. Exact values remain strings.
+  const stable = (value: unknown): unknown =>
+    Array.isArray(value)
+      ? value.map(stable)
+      : value !== null && typeof value === 'object'
+        ? Object.fromEntries(
+            Object.entries(value)
+              .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+              .map(([k, v]) => [k, stable(v)]),
+          )
+        : value;
   const bytes = new TextEncoder().encode(
-    JSON.stringify({
-      document_id: document.identity.document_id,
-      ...document.authoring,
-      nodes: document.authoring.nodes.map((n) => ({ ...n, label: '' })),
-    }),
+    JSON.stringify(
+      stable({
+        document_id: document.identity.document_id,
+        ...document.authoring,
+        nodes: document.authoring.nodes.map((n) => ({ ...n, label: '' })),
+        host_binding: document.host_binding,
+      }),
+    ),
   );
   const hash = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
   return {
