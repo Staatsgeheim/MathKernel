@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mathkernel-studio"
+version = "0.4.0a1"
+description = "Optional local workflow authoring, execution and evidence-inspection UI for MathKernel"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [{name = "Maarten Boone"}]
+dependencies = ["mathkernel>=1.3.1.dev1,<2"]
+
+[project.scripts]
+mathkernel-studio = "mathkernel_studio.server:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+mathkernel_studio = ["assets/*", "assets/assets/*", "assets/viewer/*"]

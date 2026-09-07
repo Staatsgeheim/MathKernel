@@ -1,0 +1,7 @@
+node_modules/
+host/src/mathkernel_studio/assets/
+coverage/
+*.tsbuildinfo
+# Repository-wide ignores must not omit Studio's build tooling.
+!scripts/
+!scripts/**

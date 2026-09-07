@@ -1,0 +1,72 @@
+{
+  "schema": "mk.studio/1",
+  "identity": {
+    "document_id": "fixture-exact-input",
+    "title": "INERT FIXTURE — exact value roundtrip"
+  },
+  "authoring": {
+    "revision": 1,
+    "nodes": [
+      {
+        "id": "n-input",
+        "kind": "unresolved",
+        "label": "Exact integer input — fixture only",
+        "operation_ref": "fixture.integer_input",
+        "operation_version": "fixture-1",
+        "schema_digest": null,
+        "parameter_drafts": {
+          "value": {
+            "encoding": "text",
+            "text": "9007199254740993"
+          }
+        },
+        "input_bindings": {}
+      },
+      {
+        "id": "n-inspect",
+        "kind": "unresolved",
+        "label": "Inspect exact value — fixture only",
+        "operation_ref": "fixture.inspect",
+        "operation_version": "fixture-1",
+        "schema_digest": null,
+        "parameter_drafts": {},
+        "input_bindings": {}
+      }
+    ],
+    "edges": [
+      {
+        "id": "e-1",
+        "source_node": "n-input",
+        "source_port": "value",
+        "target_node": "n-inspect",
+        "target_port": "value"
+      }
+    ],
+    "desired_outputs": [
+      {
+        "node_id": "n-inspect",
+        "port_id": "result"
+      }
+    ]
+  },
+  "presentation": {
+    "revision": 1,
+    "node_positions": {
+      "n-input": {
+        "x": 80,
+        "y": 120
+      },
+      "n-inspect": {
+        "x": 420,
+        "y": 120
+      }
+    },
+    "groups": [],
+    "viewport": {
+      "x": 0,
+      "y": 0,
+      "zoom": 1
+    }
+  },
+  "host_binding": null
+}

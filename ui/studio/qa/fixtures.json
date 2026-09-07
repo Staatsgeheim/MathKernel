@@ -1,0 +1,259 @@
+{
+  "handshake": {
+    "host_instance_id": "fixture-host",
+    "workspace_id": "fixture-workspace",
+    "mathkernel_version": "test-fixture-not-a-live-kernel",
+    "ui_protocol": "studio-host/1",
+    "catalog_revision": "fixture-catalog-1",
+    "test_host": true,
+    "authenticated": true,
+    "features": {
+      "catalog_read": true,
+      "authoring_draft": true,
+      "operation_invoke": false,
+      "workflow_validate": false,
+      "workflow_execute": false,
+      "run_observe": false,
+      "result_inspect": true,
+      "artifact_view": false,
+      "compute_review": false,
+      "approval_interact": false
+    },
+    "limits": {
+      "control_bytes": 2097152,
+      "catalog_page": 25
+    },
+    "extensions": {
+      "contract": "studio-workflow/1",
+      "scopes": [
+        "workflow_outputs",
+        "selected_subgraph"
+      ],
+      "objects": true,
+      "subworkflows": true
+    }
+  },
+  "catalog": {
+    "revision": "fixture-catalog-1",
+    "entries": [
+      {
+        "descriptor_id": "fixture-integer",
+        "operation_ref": "fixture.integer",
+        "operation_version": "fixture-1",
+        "schema_digest": "2dba2454d80024acf67141fe5efe7a6772a3f0c92273ea2f26f0ae742bcafc25",
+        "title": "Test integer",
+        "domain": "Test fixtures",
+        "description": "Synthetic contract; not a MathKernel operation.",
+        "availability": "experimental",
+        "composition": "complete",
+        "input_ports": [],
+        "output_ports": [
+          {
+            "id": "value",
+            "direction": "output",
+            "label": "Value",
+            "type_ref": "Integer",
+            "cardinality": "one",
+            "required": true,
+            "shape": []
+          }
+        ],
+        "input_types": [],
+        "output_types": [],
+        "engines": [],
+        "trust_levels": [],
+        "verification_methods": [],
+        "parameter_schema": {},
+        "coverage": "Fixture contract only; cannot execute."
+      },
+      {
+        "descriptor_id": "fixture-inspect",
+        "operation_ref": "fixture.inspect",
+        "operation_version": "fixture-1",
+        "schema_digest": "14a60637758cb026afd2fe447f3648a07965072eeefaa9ee57734959bce8ae2b",
+        "title": "Test inspect",
+        "domain": "Test fixtures",
+        "description": "Synthetic contract; not a MathKernel operation.",
+        "availability": "experimental",
+        "composition": "complete",
+        "input_ports": [
+          {
+            "id": "value",
+            "direction": "input",
+            "label": "Value",
+            "type_ref": "Integer",
+            "cardinality": "one",
+            "required": true,
+            "shape": []
+          }
+        ],
+        "output_ports": [],
+        "input_types": [],
+        "output_types": [],
+        "engines": [],
+        "trust_levels": [],
+        "verification_methods": [],
+        "parameter_schema": {},
+        "coverage": "Fixture contract only; cannot execute."
+      },
+      {
+        "descriptor_id": "fixture-numeric",
+        "operation_ref": "fixture.numeric",
+        "operation_version": "fixture-1",
+        "schema_digest": "15f450a59134f37ab2bf2282e48351984b39a1a2c8da32f74883c57f8de06ed7",
+        "title": "Test numeric",
+        "domain": "Test fixtures",
+        "description": "Synthetic contract; not a MathKernel operation.",
+        "availability": "experimental",
+        "composition": "complete",
+        "input_ports": [
+          {
+            "id": "value",
+            "direction": "input",
+            "label": "Value",
+            "type_ref": "Real64",
+            "cardinality": "one",
+            "required": true,
+            "shape": []
+          }
+        ],
+        "output_ports": [],
+        "input_types": [],
+        "output_types": [],
+        "engines": [],
+        "trust_levels": [],
+        "verification_methods": [],
+        "parameter_schema": {},
+        "coverage": "Fixture contract only; cannot execute."
+      }
+    ],
+    "next_offset": null,
+    "total": 3
+  },
+  "results": {
+    "results": [
+      {
+        "result_ref": "fixture-result",
+        "source_ref": "fixture-observation",
+        "source_revision": "fixture-1",
+        "run_ref": null,
+        "document_id": null,
+        "draft_revision": null,
+        "node_id": null
+      }
+    ],
+    "next_offset": null
+  },
+  "result": {
+    "binding": {
+      "result_ref": "fixture-result",
+      "source_ref": "fixture-observation",
+      "source_revision": "fixture-1",
+      "run_ref": null,
+      "document_id": null,
+      "draft_revision": null,
+      "node_id": null
+    },
+    "admission": "test_fixture",
+    "result": {
+      "arithmetic_transition": {
+        "input": "approximate"
+      },
+      "assumptions_used": [
+        "Fixture only; no computation occurred"
+      ],
+      "claim_evidence": {
+        "residual": {
+          "certificate": [],
+          "computation": [],
+          "empirical": [],
+          "justified_trust": "numeric",
+          "model": [],
+          "numerical": [
+            {
+              "residual": "1e-16",
+              "role": "required",
+              "support_path": "primary",
+              "trust": "numeric"
+            }
+          ],
+          "proof": []
+        }
+      },
+      "data": {
+        "value": "0.3333333333333333",
+        "artifact": {
+          "artifact_schema": "mathkernel-viz/2.0",
+          "schema_version": "2.0",
+          "title": "Synthetic coordinate preview",
+          "blocks": [
+            {
+              "block_id": "fixture-plot",
+              "kind": "plot2d",
+              "title": "Existing fixture points",
+              "series": [
+                "s"
+              ],
+              "config": {},
+              "bindings": {}
+            }
+          ],
+          "series": {
+            "s": {
+              "label": "Synthetic points",
+              "x": "x",
+              "y": "y"
+            }
+          },
+          "datasets": {
+            "x": {
+              "encoding": "inline",
+              "data": [
+                0,
+                1,
+                2
+              ]
+            },
+            "y": {
+              "encoding": "inline",
+              "data": [
+                0,
+                1,
+                4
+              ]
+            }
+          },
+          "assumptions": [
+            "Fixture only"
+          ],
+          "transformations": [],
+          "provenance": {
+            "steps": []
+          }
+        }
+      },
+      "derivation": [],
+      "engine": "fixture-engine",
+      "engine_versions": {},
+      "errors": [],
+      "evidence_bundle": {
+        "certificate": [],
+        "computation": [],
+        "empirical": [],
+        "justified_trust": null,
+        "model": [],
+        "numerical": [],
+        "proof": []
+      },
+      "mathkernel_version": "test-fixture-not-a-live-kernel",
+      "ok": true,
+      "semantic_status": "verified_numeric",
+      "side_conditions": [],
+      "status": "verified",
+      "trust": "numeric",
+      "warnings": []
+    },
+    "claim_trust": {}
+  },
+  "csp": "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; frame-src 'self'; form-action 'self'"
+}

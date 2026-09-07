@@ -43,7 +43,6 @@ tests/test_xorshift_families.py.disabled
 tests/test_companion.py
 scratch_readme_blocks/
 
-MathKernel.zip
 MathKernel_Remote_Compute_Technical_Design.html
 MathKernel_Remote_Compute_Technical_Design.md
 multimodal_demo.html
@@ -51,3 +50,4 @@ README.html
 README.md.pdf
 viz_building_blocks_demo.html
 Implementation_Handover.md
+*.zip

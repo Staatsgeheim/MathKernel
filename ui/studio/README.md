@@ -1,0 +1,179 @@
+# MathKernel Studio
+
+Studio is an optional, local browser workbench for MathKernel. **0.4.0 alpha** adds real local workflow execution through the separate `mathkernel_workflow` backend. The host validates and freezes a draft, plans supported operations, enforces local policy and approval, and owns execution independently of the browser.
+
+Use the operation palette to explore your installed kernel, create input drafts, arrange nodes, inspect parameters, and save `.mkstudio.json` documents. Canvas and outline use the same edit commands. Existing host results can be published for read-only inspection; files opened in the browser remain untrusted candidates.
+
+**Executable scope:** 15 explicit exact/symbolic and matrix adapters, bounded acyclic graphs, selected-output planning, and saved self-contained subworkflows. Partial legacy catalog entries remain authorable but cannot execute through this adapter. Remote/GPU targets, numerical input drafts and unsupported control constructs remain unavailable.
+
+## Install from this branch
+
+Build with Node **22.12+** (Node 24 was exercised) and Python **3.11+**. Run these commands from the repository root:
+
+```bash
+python -m pip install -e .
+cd ui/studio
+npm ci
+npm run build
+cd ../..
+python -m pip install ./ui/studio/host
+mathkernel-studio
+```
+
+Open the loopback address printed by the process. Click **Connect**, then enter its one-time code. The code expires after ten minutes and cannot be reused. A session lasts one hour. **Revoke session** clears the host session and client observations; restarting the host creates a fresh code. The local runtime preserves its host/workspace identity and observations in its state directory.
+
+The host binds only to `127.0.0.1`. It deliberately does not expose a remote-listen option or accept imported host URLs. Use the printed address exactly: `localhost` is a different, unapproved Host value. Operator-managed HTTPS/reverse-proxy deployments require a separate integration, not a relaxed origin check.
+
+Once built into the optional wheel, Node/npm are **not required at runtime**. The core distribution includes the independent workflow backend and never imports Studio. Install the matching core wheel from this branch (1.3.1.dev1) with the Studio wheel (0.4.0a1). No CDN, fonts service, telemetry, cloud login or service worker is used.
+
+```bash
+# Runtime state and identity persist here (default: ~/.mathkernel/studio):
+mathkernel-studio --state-dir ./studio-state --workspace-id research
+
+# Operator policy; confirmations cannot override denial:
+mathkernel-studio --run-timeout 120
+mathkernel-studio --deny-execution
+
+# Catalog and existing-result inspection without a workflow runtime:
+mathkernel-studio --read-only
+
+# Synthetic contract host, without constructing a mathematical kernel:
+mathkernel-studio --test-host
+mathkernel-studio --test-host --fault receipt
+```
+
+Test-host faults: `denied`, `incompatible`, `scope_mismatch`, `catalog_drift`, `expired`, `candidate`, `receipt`, `hostile_text`. Test hosts have a permanent banner. Their observations are synthetic; none establishes mathematical evidence.
+
+## Execute the exact example
+
+1. Connect to the ordinary local host. On an empty draft choose **Create exact example**. This creates `x^3 + 9007199254740993` followed by differentiation with respect to `x`; it only edits the draft.
+2. Open **Workflow plans and run observations**, validate the frozen draft, then request a plan for its desired outputs.
+3. Review the operations, exact arithmetic, wall-time policy, target and cost disclosures. Request the host challenge, explicitly approve it, then submit once.
+4. Refresh the run snapshot until terminal. Open a node result to inspect its original kernel value, evidence and semantic status. Derivation is computed by MathKernel, never by JavaScript.
+5. Reconnect or reopen Studio to list retained runs. Closing a tab leaves the run under host ownership. **Cancel** requests cancellation; refresh to observe confirmed process cleanup.
+
+Use **Publish reusable workflow** after successful validation to save a self-contained, single-output workflow. Reconnect to refresh the catalog, add its pinned descriptor, and inspect its boundary before planning. Publication saves authoring semantics; it does not run or approve them. This adapter supports no external subworkflow inputs. Fragments remain portable draft copies.
+
+Plans bind the exact document/revision, adapter versions, kernel version and operator policy. A challenge lasts at most five minutes and is single-use, session-bound and plan-bound. Submission IDs are durably reconciled; a lost response must not cause a replacement run. Ordinary host restart marks unfinished runs interrupted without replay and retains completed results. One process owns each state directory; do not copy or archive it while that host is running.
+
+The default limit is 100 expanded nodes, two simultaneous runs and 60 seconds per run. Matrix inputs are at most 32 by 32. Optional `--memory-mb` uses POSIX address-space limits; no memory hard cap is claimed when unset or on unsupported platforms. Local electricity/hardware usage is unmeasured; the adapter provisions no billable provider. No remote target, implicit retry or fallback is available. Runtime observations are bounded snapshots, not streaming telemetry. Individual serialized results are capped at 1.5 MB; oversized output fails explicitly.
+
+## Author a draft
+
+1. Add **Integer**, **Rational**, or **Numerical** input from the palette. They are local MathIR-shaped input drafts, not registered executable operations.
+2. Connect the host to load its real registry. Search by name, domain or type, then **Add** an operation shell. Legacy discovery metadata remains **partial** and availability **unknown**; advertised engine names alone do not establish availability.
+3. Select a node. Parameter text updates the draft as you type, including invalid text. Each focused field edit is grouped for undo. Labels and positions commit when you leave the field.
+4. Use **Connect** to select endpoints without dragging. When port metadata is missing, an explicitly entered port ID remains unresolved. Nothing guesses individual ports from a list of type names. Known type or dimension conflicts are rejected. Reconnect retains the old wire until the replacement is accepted. Replacing an occupied input requires an explicit checkbox.
+5. **Check draft** reports structural/advisory checks at the current draft revision. It is not host mathematical validation. Unresolved operations, changed schemas and unsupported cycles remain visible and exportable.
+6. **Export document** saves the editable authoring file. Opening an import first shows its dependencies and references; nothing executes or contacts an imported destination.
+
+Exact integers, numerators and denominators never pass through JavaScript `Number`. Decimal text is approximate; decimal-comma input and nonfinite values are explicitly unsupported. Changing display/layout information cannot alter an exact value. Mathematical parameters, connections and output intent increment the draft revision; labels and positions increment presentation revision. Undo/redo restore content while revisions remain monotonic.
+
+Use **Outline** for a non-dragging, keyboard-accessible editing path. Checkboxes select several nodes; position fields move them; Connect/Reconnect/Disconnect edit wires. **Arrange** applies a reversible three-column layout without changing mathematics. Ctrl/Cmd+Z and redo work outside editable fields; Delete opens a draft-deletion preview. **Compose & compare** creates presentation-only groups, exports authority-free reusable fragments, inserts fragments with fresh IDs, and compares retained semantic and presentation revisions. Above 200 nodes the canvas yields to the outline; no nodes are dropped from the file.
+
+## Recovery and import
+
+Recovery is opt-in because expressions may be private. **Enable recovery** uses IndexedDB with host/workspace/document identity and version checks. The recovery browser lists scoped copies and offers restore, compare, export, or discard; a conflicting tab is reported rather than overwritten. Restore never replays commands or reconnects. After restoring another document, enable recovery again to resume saving it.
+
+Storage is limited to ten document copies, each at most 10 MiB. Browser quota/eviction and policy may impose smaller limits. The most recent copy in the current host/workspace is offered first. Recovery copies are not backups or authoritative host saves. Pause retains the existing copy. Use file export for durable handoff; discard an existing copy through the recovery dialog to remove it.
+
+Imports reject duplicate JSON keys, unsafe numeric literals, prototype-related keys, unknown root fields (including embedded trust/approval assertions), duplicate IDs, dangling references, nesting over 32, documents over 10 MiB, over 5,000 nodes/10,000 edges, and over 1 MiB total parameter text per node. Invalid *field contents* are kept as draft strings. Host and object references are provenance only and stay unresolved. Unknown operations retain their original reference/version/settings/wires.
+
+Import parsing runs in a terminable worker with a five-second budget. The supplied `mk.studio/1` schema is retained unchanged. Runtime checks add cross-reference and combined-byte limits; no migration is performed. Parameter schemas and `$ref` strings are displayed as inert metadata, never fetched or compiled into remote forms.
+
+## Inspect existing results
+
+**Open candidate JSON** accepts bounded JSON as untrusted source data. It can display values, original labels, assumptions and per-claim metadata, but cannot promote any label into a host-admitted badge. HTML/SVG, proof text and URLs are rendered as escaped, bounded text. Supported inline `mathkernel-viz/2.0` plots and point/trajectory data can open in a fixed isolated renderer; unsupported transforms, encodings and active content remain inert source data. Exact source tables and exports remain separate from floating-point screen coordinates.
+
+For an already-running Python host, explicitly publish existing `MathResult` objects:
+
+```python
+from mathkernel_studio.source import KernelSource, InspectionRecord
+from mathkernel_studio.server import StudioServer
+
+# kernel and existing_result are supplied by your application.
+# Constructing this view does not calculate or reverify anything.
+record = InspectionRecord.from_result(
+    existing_result,
+    result_ref="saved-result-1",
+    source_ref="existing-expression-1",
+    source_revision="1",
+)
+source = KernelSource(
+    kernel,
+    host_id="my-laptop",
+    workspace_id="research",
+    records=(record,),
+)
+with StudioServer(source) as server:
+    print(f"Open {server.origin}/studio/")
+    print(f"One-time connection code: {server.connect_code}")
+    server.serve_forever()
+```
+
+The standard launcher exposes real execution and its saved result snapshots. The `--read-only` launcher publishes catalog metadata only. Neither manufactures example results. `InspectionRecord` copies the existing serialized result and asks the **existing** evidence model for claim summaries. There is no HTTP result-admission endpoint. A source revision is not a workflow revision. Optional run mappings require explicit document, draft and node identity; missing mappings are displayed as absent.
+
+Inspect separates host-admitted trust from `semantic_status`, per-claim evidence, assumptions, arithmetic transitions and derivation. Required, diagnostic and alternative support paths remain visible. It does not calculate a new global evidence grade in JavaScript.
+
+Output-budget receipts are recognized before badges. Pages are read explicitly, tied to the published result reference, checked for offsets, size and SHA-256, and capped at 2 MiB total. Full reconstructed bytes remain source data; this first adapter does not manufacture a fresh per-claim admission summary from a receipt. Expired resources produce an unavailable message, never recomputation. Use a full existing host result for admitted claim summaries.
+
+## Verification and support limits
+
+```bash
+cd ui/studio
+npm test
+npm run build
+cd ../..
+PYTHONPATH=src python -m unittest discover -s tests -p test_workflow_runtime.py -v
+PYTHONPATH=src python -m unittest discover -s ui/studio/host/tests -v
+```
+
+The tests exercise reducer/codec invariants, groups/fragments and revision comparison, matrix review, IndexedDB conflicts, typed client contracts, escaped component output, viewer projection/isolation, session/origin enforcement, the actual legacy registry classes, and live `MathKernel` result/receipt integration. The earlier U0–U3 checkpoint recorded a real Chrome journey covering offline authoring, exact integers beyond binary precision, advisory checks, fixture-host disclosure, catalog loading, non-drag port connection, recovery conflict presentation, per-claim result inspection, and the isolated plot/table viewer. Screen-reader testing, 200% zoom, drag gestures, and the Edge/Firefox/Safari matrix remain release-hardening work rather than U0–U3 code gaps.
+
+No supported deep-link loading is advertised yet. Nested routes return the same static shell with an unresolved-link notice and no automatic data access. The supported application base is `/studio/`. An outline over the hard limits is rejected; the 200-node canvas threshold is conservative and unbenchmarked in real browsers.
+
+See [implementation notes](notes/implementation-report.md) for tests and known gaps. The [UI design](design/MathKernel_Studio_UI_Technical_Design.md) and [planned acceptance catalog](design/UI_Acceptance_Test_Catalog.json) describe the intended product, including features this preview does not implement.
+
+## Maintainer architecture
+
+- `src/editor`: independent document/reducer, bounded history, groups/fragments, comparison, diagnostics, import and recovery.
+- `src/host`: explicit capability-gated client, runtime-validated scoped envelopes and command reconciliation.
+- `src/inspectors`, `src/evidence`, `src/viewers`: text-preserving inputs, matrix review, faithful evidence/source inspection and isolated fixed visualization.
+- `src/security`: duplicate-aware bounded JSON parser and no-JIT schema configuration.
+- `src/workers`: import parsing only; no mathematical execution.
+- `host/src/mathkernel_studio`: optional loopback static host, workflow adapter, discovery projection and fixture faults.
+- Repository `src/mathkernel_workflow`: independent compiler, immutable plans, SQLite command/run ownership, policy/approval and supervised kernel processes.
+
+Locked versions are in `package-lock.json`. `npm run build` emits the optional package's assets, SHA-256 asset manifest, dependency inventory and local license notices. The inventory is not a claim of a completed standards-format release SBOM. Package a wheel after building:
+
+```bash
+python -m pip wheel --no-deps ./ui/studio/host -w dist
+```
+
+The main shell uses `script-src 'self'`; schema validation explicitly disables JIT. React Flow uses a documented style-attribute allowance, `style-src 'self' 'unsafe-inline'`. The opaque-origin viewer is a self-contained file whose single script is authorized by an exact SHA-256 CSP hash; it has no connection permission. Authentication state exists only in a short-lived HttpOnly/SameSite cookie and host memory. This is a loopback application, not a remotely exposed production service or a completed security audit.
+
+
+## Advanced workflow review
+
+The default local host supplies `studio-workflow/1`. **Workflow plans and run observations** supports frozen validation, scoped immutable plans, host approval challenges, submission, reconciliation, and manual run snapshots. To exercise synthetic contracts separately:
+
+```bash
+mathkernel-studio --test-host --test-workflow
+mathkernel-studio --test-host --test-workflow --workflow-fault submission_unknown
+```
+
+Review the resolved operations, assumptions, outputs, resource units, price source, exclusions, and data export closure before confirming. Unknown price is not zero; an estimate is not a hard cap. Approximate host time disables expired controls, while the host must enforce actual expiry and authorization. Confirmation supports intentional keyboard activation; held-key repeats are ignored.
+
+Unknown command outcomes retain only request and plan references in browser storage. Reopen the panel and **Check existing request**; never submit a replacement to discover whether the first request ran. Recovery storage failures block submission. Web Locks coordinate command review across tabs; browsers without Web Locks can inspect but cannot submit. Imported drafts contain no approval authority. Run result buttons check the frozen run/document/revision/node mapping before opening the evidence inspector.
+
+Subworkflow inspection displays immutable revision/digest and explicit external-to-internal ports. A changed digest at the same revision is refused. Inspecting another version does not rebind the draft. Fragments remain independent copies; history compares edge identities and output sets without treating array reordering as a semantic edit.
+
+## Audio audition
+
+Existing `mathkernel-sonify/1.0` documents can open an isolated sine-event audition. Playback starts only after **Play** inside the viewer; Pause, Stop, seek, volume and mute are available. Closing the viewer releases audio resources. At most 500 resolved events over 60 seconds are supported, with frequencies from 20–20,000 Hz and gains from 0–1. Unresolved mappings, phase/timbre transforms and unsupported values remain source-only.
+
+Audition is explicitly a presentation preview, not the exported PCM waveform: gain is divided by event count to bound total amplitude, and master volume starts at 10%. No normalization, mathematical analysis or mapping is rerun. The source event table retains original values, and the source export is unchanged.
+
+## Current release evidence
+
+See [local execution report](notes/local-execution-report.md) for current changes, evidence and limits; the older U4–U7 report is historical. Real workflow execution and local policy now have kernel and authenticated HTTP integration tests. Browser automation was unavailable for this checkpoint. The full browser/platform, assistive-technology, localization and reference-laptop performance qualification remains outstanding; this is an alpha, not a certified release.

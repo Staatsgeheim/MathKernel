@@ -32,6 +32,12 @@ original result's trust. The minimum configurable budget is 1,000 bytes; outer M
 framing is excluded. Stored contexts and derived expression ancestry survive restart.
 Unknown contexts or incompatible context reuse must be resolved, not silently ignored.
 
+## Studio authoring and inspection
+
+When working with `.mkstudio.json` documents, Studio screenshots, or the optional
+Studio host, read [studio.md](studio.md). These are authoring/presentation objects;
+opening or connecting a graph does not establish execution or mathematical evidence.
+
 ## Shared multimodal projection contract
 
 Use `math_projection_catalog` and `math_projection_create` when a mathematical object/result should feed visualization or audio. `math_visualize_projection` and `math_sonify_projection` consume the same evidence-carrying projection. High-dimensional reductions must explicitly name their method/dimensions and declare projection loss; structured audio reductions are returned as transformation provenance rather than hidden flattening.

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mathkernel"
-version = "1.3.0"
+version = "1.3.1.dev1"
 description = "Evidence-aware multi-engine mathematics runtime for LLMs: exact, symbolic, formal, certified-interval and numeric computation with typed MathIR, trust labels, and full provenance — as a Python library and an MCP server"
 readme = {file = "README.md", content-type = "text/markdown"}
 requires-python = ">=3.11"

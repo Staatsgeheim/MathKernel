@@ -34,6 +34,12 @@ The whole serialized response has a minimum configurable budget of 1,000 bytes;
 a delivery receipt is not the original mathematical result. Its `unknown` trust
 does not replace the trust of the preserved result.
 
+## Studio authoring and inspection
+
+When working with `.mkstudio.json` documents, Studio screenshots, or the optional
+Studio host, read [studio.md](studio.md). These are authoring/presentation objects;
+opening or connecting a graph does not establish execution or mathematical evidence.
+
 ## Shared multimodal projection contract
 
 Visualization and scientific audio now share `mathkernel_projection.MultimodalProjection`. Use it for domain objects rather than independently flattening data in each frontend. The live catalog covers fields, matrices/tensors, graphs/evidence trees, distributions, spectra/complex data, meshes/complexes, ODE/PDE solutions, optimization/inference, finite dynamics/finite fields, relation geometry, sets/partitions/piecewise objects, quantities, ensembles and explicit higher-dimensional projections. Projection parameters and information loss are provenance; they never create mathematical evidence.

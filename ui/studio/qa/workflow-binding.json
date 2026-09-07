@@ -1,0 +1,75 @@
+{
+  "document": {
+    "schema": "mk.studio/1",
+    "identity": {
+      "document_id": "doc",
+      "title": "Real test"
+    },
+    "authoring": {
+      "revision": 1,
+      "nodes": [
+        {
+          "id": "a",
+          "kind": "operation",
+          "label": "parse",
+          "operation_ref": "workflow.parse",
+          "operation_version": "local-workflow/1",
+          "schema_digest": "eb0315a099cde0a47d4a401ef6b3020b8012fcd1d446dbb3aa8f113c6486fbbe",
+          "parameter_drafts": {
+            "expression": {
+              "encoding": "text",
+              "text": "x^3 + 9007199254740993"
+            }
+          },
+          "input_bindings": {}
+        },
+        {
+          "id": "b",
+          "kind": "operation",
+          "label": "differentiate",
+          "operation_ref": "workflow.differentiate",
+          "operation_version": "local-workflow/1",
+          "schema_digest": "0d350896b57e1ce488f44caf4870ee374be40933ba38f08271467668939497e3",
+          "parameter_drafts": {
+            "variable": {
+              "encoding": "text",
+              "text": "x"
+            }
+          },
+          "input_bindings": {}
+        }
+      ],
+      "edges": [
+        {
+          "id": "edge",
+          "source_node": "a",
+          "source_port": "value",
+          "target_node": "b",
+          "target_port": "expr_id"
+        }
+      ],
+      "desired_outputs": [
+        {
+          "node_id": "b",
+          "port_id": "value"
+        }
+      ]
+    },
+    "presentation": {
+      "revision": 0,
+      "node_positions": {},
+      "groups": [],
+      "viewport": {
+        "x": 0,
+        "y": 0,
+        "zoom": 1
+      }
+    },
+    "host_binding": null
+  },
+  "binding": {
+    "document_id": "doc",
+    "draft_revision": 1,
+    "document_digest": "cf416188a61c9f0b0efa553cafe0859c0f49ae38447fcb6b9496eac302091e4d"
+  }
+}

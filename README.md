@@ -34,6 +34,7 @@ Mathematical results carry an explicit **trust level**, an **engine** tag, and a
 - [Shared multimodal projections](#shared-multimodal-projections)
 - [Scientific sonification](#scientific-sonification-mathkernel-sonify)
 - [Unified multimodal artifacts](#unified-multimodal-artifacts-mathkernel-multimodal)
+- [MathKernel Studio](#mathkernel-studio)
 - [MCP tool surface](#mcp-tool-surface)
 - [Configuration](#configuration)
 - [Repository layout](#repository-layout)
@@ -903,6 +904,29 @@ mkm.export_html(artifact, "result.html")
 Via MCP, research artifacts can be assembled from stored visualization and sonification
 objects and exported as a single self-contained file.
 
+## MathKernel Studio
+
+MathKernel Studio is an optional local browser workbench on the Studio development
+branch. The **0.4 alpha** provides canvas/outline authoring, exact-value inputs,
+recovery, evidence inspection, isolated plot/audio viewers, and real local workflow
+execution through the separate `mathkernel_workflow` backend.
+
+The backend validates and freezes supported graphs, presents immutable plans,
+enforces operator policy and session-bound approval, and supervises kernel worker
+processes. Durable requests and result snapshots survive browser disconnects;
+interrupted host processes are never automatically replayed. Fifteen explicit
+symbolic/matrix adapters and saved self-contained subworkflows are supported.
+Partial legacy catalog entries and unsupported targets remain capability-gated.
+Imported result labels remain untrusted; kernel evidence is preserved.
+
+The optional Studio wheel bundles its assets; Node/npm are build-time tools only.
+The Python/MCP package does not import Studio. This is a tested local execution
+alpha; full browser/accessibility/platform qualification remains outstanding.
+
+See the [Studio guide](ui/studio/README.md) for installation, keyboard and
+non-dragging editing, the protected loopback connection, result publishing, and
+current support limits.
+
 ## MCP tool surface
 
 <details>
@@ -1068,6 +1092,7 @@ src/mathkernel_viz/        visualization IR, viewers and portable renderers
 src/mathkernel_sonify/     scientific sonification IR, PCM/WAV and WebAudio
 src/mathkernel_artifacts/  shared evidence, lineage and synchronization schema
 src/mathkernel_multimodal/ unified visual/audio research-artifact exporter
+ui/studio/                optional local Studio authoring/inspection preview
 scripts/                   reproducibility, GPU checks and demonstrations
 experiments/               research validation programs and datasets
 skills/                    synchronized Python and MCP agent skills

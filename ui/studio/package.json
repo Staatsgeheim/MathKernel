@@ -1,0 +1,38 @@
+{
+  "name": "@mathkernel/studio",
+  "version": "0.4.0-alpha.1",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "vite --config vite.qa.config.ts",
+    "build": "tsc --noEmit && vite build && vite build --config vite.viewer.config.ts && node scripts/manifest.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "licenses": "node scripts/manifest.mjs",
+    "format": "prettier --write src tests scripts vite*.config.ts",
+    "format:check": "prettier --check src tests scripts vite*.config.ts"
+  },
+  "dependencies": {
+    "@xyflow/react": "12.8.5",
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
+    "zod": "4.1.5"
+  },
+  "devDependencies": {
+    "@testing-library/react": "16.3.0",
+    "@types/node": "24.3.1",
+    "@types/react": "19.1.12",
+    "@types/react-dom": "19.1.9",
+    "@vitejs/plugin-react": "5.0.2",
+    "fake-indexeddb": "6.2.2",
+    "jsdom": "26.1.0",
+    "prettier": "3.6.2",
+    "typescript": "5.9.2",
+    "vite": "7.1.5",
+    "vitest": "3.2.4"
+  }
+}
