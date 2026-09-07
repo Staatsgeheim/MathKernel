@@ -1,0 +1,20 @@
+{
+  "fixture_only": true,
+  "host_instance_id": "fixture-host",
+  "workspace_id": "fixture-workspace",
+  "ui_protocol": "studio-host/1-proposed",
+  "mathkernel_version": "fixture-not-a-live-host",
+  "features": {
+    "catalog_read": true,
+    "authoring_draft": true,
+    "operation_invoke": false,
+    "workflow_validate": false,
+    "workflow_execute": false,
+    "run_observe": false,
+    "result_inspect": false,
+    "artifact_view": false,
+    "compute_review": false,
+    "approval_interact": false
+  },
+  "message": "Inert design fixture. Missing workflow execution must remain unavailable, not emulated by browser calls."
+}

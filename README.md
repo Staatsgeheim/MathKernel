@@ -34,6 +34,7 @@ Mathematical results carry an explicit **trust level**, an **engine** tag, and a
 - [Shared multimodal projections](#shared-multimodal-projections)
 - [Scientific sonification](#scientific-sonification-mathkernel-sonify)
 - [Unified multimodal artifacts](#unified-multimodal-artifacts-mathkernel-multimodal)
+- [MathKernel Studio](#mathkernel-studio)
 - [MCP tool surface](#mcp-tool-surface)
 - [Configuration](#configuration)
 - [Repository layout](#repository-layout)
@@ -903,6 +904,25 @@ mkm.export_html(artifact, "result.html")
 Via MCP, research artifacts can be assembled from stored visualization and sonification
 objects and exported as a single self-contained file.
 
+## MathKernel Studio
+
+MathKernel Studio is an optional local browser workbench, currently available as an
+**authoring and inspection preview** on the Studio development branch. It provides
+operation discovery, canvas and outline editing, exact/numerical input drafts,
+undo/redo, inert `.mkstudio.json` import/export, browser recovery, and read-only
+inspection of existing results and per-claim evidence.
+
+Studio documents describe authoring intent. The current preview does not execute
+visual workflows: validation, planning and scheduling require a separately supplied
+workflow-capable host. Legacy catalog entries retain their incomplete-metadata
+warnings, and imported result labels remain untrusted. The base Python/MCP install
+is unaffected; Studio's optional package serves locally bundled assets and requires
+Node/npm only at build time.
+
+See the [Studio guide](ui/studio/README.md) for installation, keyboard and
+non-dragging editing, the protected loopback connection, result publishing, and
+current support limits.
+
 ## MCP tool surface
 
 <details>
@@ -1068,6 +1088,7 @@ src/mathkernel_viz/        visualization IR, viewers and portable renderers
 src/mathkernel_sonify/     scientific sonification IR, PCM/WAV and WebAudio
 src/mathkernel_artifacts/  shared evidence, lineage and synchronization schema
 src/mathkernel_multimodal/ unified visual/audio research-artifact exporter
+ui/studio/                optional local Studio authoring/inspection preview
 scripts/                   reproducibility, GPU checks and demonstrations
 experiments/               research validation programs and datasets
 skills/                    synchronized Python and MCP agent skills

@@ -1,0 +1,24 @@
+{
+  "schema": "mk.studio/1",
+  "identity": {
+    "document_id": "example-document",
+    "title": "Untitled experiment"
+  },
+  "authoring": {
+    "revision": 1,
+    "nodes": [],
+    "edges": [],
+    "desired_outputs": []
+  },
+  "presentation": {
+    "revision": 1,
+    "node_positions": {},
+    "groups": [],
+    "viewport": {
+      "x": 0,
+      "y": 0,
+      "zoom": 1
+    }
+  },
+  "host_binding": null
+}

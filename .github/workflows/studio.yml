@@ -1,0 +1,32 @@
+name: Studio preview
+on:
+  push:
+    paths: ['ui/studio/**', '.github/workflows/studio.yml']
+  pull_request:
+    paths: ['ui/studio/**', '.github/workflows/studio.yml']
+permissions:
+  contents: read
+jobs:
+  studio:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: ui/studio/package-lock.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm ci
+        working-directory: ui/studio
+      - run: npm run format:check && npm test && npm run build
+        working-directory: ui/studio
+      - run: python -m pip install -e . build
+      - run: python -m unittest discover -s ui/studio/host/tests -v
+      - run: python -m build --wheel ui/studio/host
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mathkernel-studio-preview
+          path: ui/studio/host/dist/*.whl

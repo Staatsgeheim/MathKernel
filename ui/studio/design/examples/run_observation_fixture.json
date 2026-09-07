@@ -1,0 +1,31 @@
+{
+  "fixture_only": true,
+  "host_instance_id": "fixture-host",
+  "workspace_id": "fixture-workspace",
+  "run_id": "fixture-run-12",
+  "authoring_document_id": "fixture-document",
+  "frozen_authoring_revision": 12,
+  "observation_revision": 17,
+  "event_cursor": "fixture-cursor-17",
+  "states": {
+    "execution": "output_ready",
+    "verification": "passed",
+    "artifact": "available",
+    "resource": "cleanup_unknown",
+    "cost": "exposure_unknown",
+    "freshness": "stale"
+  },
+  "result_summary": {
+    "kind": "accepted_result_fixture",
+    "trust": "numeric",
+    "semantic_status": "verified_numeric",
+    "checked_claim": "A specified numerical residual check passed for the frozen fixture inputs.",
+    "not_established": [
+      "exactness",
+      "interval certification",
+      "formal proof"
+    ],
+    "display_warning": "INERT FIXTURE. No calculation or verification was performed."
+  },
+  "resource_warning": "Result readiness does not establish resource release or final cost."
+}

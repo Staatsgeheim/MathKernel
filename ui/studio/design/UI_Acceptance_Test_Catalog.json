@@ -1,0 +1,2679 @@
+{
+  "document_id": "MK-STUDIO-UI-001",
+  "revision": "1.0",
+  "status": "Planned acceptance specification; no runtime test has been executed by creating this catalog.",
+  "test_count": 144,
+  "group_count": 24,
+  "cases": [
+    {
+      "test_id": "UI-AT-001",
+      "group": "Startup and scope",
+      "milestone": "U1",
+      "layer": "browser",
+      "spec_sections": "1, 2, 7, 22",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-02",
+        "UI-INV-14",
+        "UI-INV-19",
+        "UI-INV-20"
+      ],
+      "title": "Open Studio offline",
+      "setup": "Packaged assets and a local test host are available without Internet.",
+      "action": "Open the UI.",
+      "expected_outcome": "Shell and permitted catalog load without CDN, cloud login, telemetry, provider calls, or Node.js runtime.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-002",
+      "group": "Startup and scope",
+      "milestone": "U1",
+      "layer": "browser",
+      "spec_sections": "1, 2, 7, 22",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-02",
+        "UI-INV-14",
+        "UI-INV-19",
+        "UI-INV-20"
+      ],
+      "title": "Import is inert",
+      "setup": "A valid graph references expensive operations.",
+      "action": "Open and arrange the graph.",
+      "expected_outcome": "No mathematical command, upload, provisioning, grant action, or preview session is issued.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-003",
+      "group": "Startup and scope",
+      "milestone": "U1",
+      "layer": "browser",
+      "spec_sections": "1, 2, 7, 22",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-02",
+        "UI-INV-14",
+        "UI-INV-19",
+        "UI-INV-20"
+      ],
+      "title": "Missing workflow host",
+      "setup": "Host provides catalog and standalone operations only.",
+      "action": "Open a multi-node draft and inspect Run.",
+      "expected_outcome": "Authoring remains usable; workflow execution is explicitly unavailable; no sequence of operation calls occurs.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-004",
+      "group": "Startup and scope",
+      "milestone": "U1",
+      "layer": "browser",
+      "spec_sections": "1, 2, 7, 22",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-02",
+        "UI-INV-14",
+        "UI-INV-19",
+        "UI-INV-20"
+      ],
+      "title": "Base library isolation",
+      "setup": "Studio is not installed.",
+      "action": "Import and use the base MathKernel package.",
+      "expected_outcome": "No UI/JavaScript/provider dependencies or UI assets are required.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-005",
+      "group": "Startup and scope",
+      "milestone": "U1",
+      "layer": "browser",
+      "spec_sections": "1, 2, 7, 22",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-02",
+        "UI-INV-14",
+        "UI-INV-19",
+        "UI-INV-20"
+      ],
+      "title": "No discovery scans",
+      "setup": "Fresh connection configuration has one explicit host.",
+      "action": "Start Studio and open connection settings.",
+      "expected_outcome": "Only the selected host is contacted; no LAN, SSH, or provider scanning occurs.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-006",
+      "group": "Startup and scope",
+      "milestone": "U1",
+      "layer": "browser",
+      "spec_sections": "1, 2, 7, 22",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-02",
+        "UI-INV-14",
+        "UI-INV-19",
+        "UI-INV-20"
+      ],
+      "title": "Fixture-host disclosure",
+      "setup": "The development fixture host is selected.",
+      "action": "Navigate every executable-looking screen.",
+      "expected_outcome": "A persistent Test host label remains; fixture results are not presented as real MathKernel execution.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-007",
+      "group": "Catalog truthfulness",
+      "milestone": "U1",
+      "layer": "contract",
+      "spec_sections": "2, 8",
+      "invariant_ids": [
+        "UI-INV-03",
+        "UI-INV-08",
+        "UI-INV-11",
+        "UI-INV-17",
+        "UI-INV-20"
+      ],
+      "title": "Partial port metadata",
+      "setup": "A descriptor lacks cardinality and requiredness.",
+      "action": "Add the capability and inspect its ports.",
+      "expected_outcome": "Missing semantics are labelled unresolved; no invented required port or guaranteed compatibility appears.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-008",
+      "group": "Catalog truthfulness",
+      "milestone": "U1",
+      "layer": "contract",
+      "spec_sections": "2, 8",
+      "invariant_ids": [
+        "UI-INV-03",
+        "UI-INV-08",
+        "UI-INV-11",
+        "UI-INV-17",
+        "UI-INV-20"
+      ],
+      "title": "Unavailable engine",
+      "setup": "Catalog advertises an operation whose optional engine is absent.",
+      "action": "Search and open its details.",
+      "expected_outcome": "Documentation remains available; execution is unavailable with reason; no installation begins.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-009",
+      "group": "Catalog truthfulness",
+      "milestone": "U1",
+      "layer": "contract",
+      "spec_sections": "2, 8",
+      "invariant_ids": [
+        "UI-INV-03",
+        "UI-INV-08",
+        "UI-INV-11",
+        "UI-INV-17",
+        "UI-INV-20"
+      ],
+      "title": "Schema drift",
+      "setup": "A saved node uses schema digest A; the host now provides B.",
+      "action": "Refresh the catalog.",
+      "expected_outcome": "Affected node requires review; connections are not remapped by position; old plan is invalidated.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-010",
+      "group": "Catalog truthfulness",
+      "milestone": "U1",
+      "layer": "contract",
+      "spec_sections": "2, 8",
+      "invariant_ids": [
+        "UI-INV-03",
+        "UI-INV-08",
+        "UI-INV-11",
+        "UI-INV-17",
+        "UI-INV-20"
+      ],
+      "title": "Removed operation",
+      "setup": "A draft refers to an operation missing from the scoped catalog.",
+      "action": "Open the draft.",
+      "expected_outcome": "An unresolved placeholder preserves original identity/settings; no replacement is silently chosen.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-011",
+      "group": "Catalog truthfulness",
+      "milestone": "U1",
+      "layer": "contract",
+      "spec_sections": "2, 8",
+      "invariant_ids": [
+        "UI-INV-03",
+        "UI-INV-08",
+        "UI-INV-11",
+        "UI-INV-17",
+        "UI-INV-20"
+      ],
+      "title": "Catalog script injection",
+      "setup": "Descriptor prose, icon and widget fields contain script/URL payloads.",
+      "action": "Render the catalog entry.",
+      "expected_outcome": "Text is escaped; icons/widgets use allowlisted identifiers; no remote code/resource loads.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-012",
+      "group": "Catalog truthfulness",
+      "milestone": "U1",
+      "layer": "contract",
+      "spec_sections": "2, 8",
+      "invariant_ids": [
+        "UI-INV-03",
+        "UI-INV-08",
+        "UI-INV-11",
+        "UI-INV-17",
+        "UI-INV-20"
+      ],
+      "title": "Permission-filtered catalog",
+      "setup": "Two workspaces have different authorized entries.",
+      "action": "Switch workspace after search.",
+      "expected_outcome": "Catalog caches and selections are scoped; inaccessible entries or details do not leak.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-013",
+      "group": "Document identity",
+      "milestone": "U2",
+      "layer": "unit_property",
+      "spec_sections": "9",
+      "invariant_ids": [
+        "UI-INV-05",
+        "UI-INV-06",
+        "UI-INV-15",
+        "UI-INV-18"
+      ],
+      "title": "Layout-only revision",
+      "setup": "A validated draft is unchanged mathematically.",
+      "action": "Move a node.",
+      "expected_outcome": "Only presentation revision changes; operation/input bindings stay identical.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-014",
+      "group": "Document identity",
+      "milestone": "U2",
+      "layer": "unit_property",
+      "spec_sections": "9",
+      "invariant_ids": [
+        "UI-INV-05",
+        "UI-INV-06",
+        "UI-INV-15",
+        "UI-INV-18"
+      ],
+      "title": "Semantic edit revision",
+      "setup": "A validated draft has an approved threshold.",
+      "action": "Change the threshold text and commit.",
+      "expected_outcome": "Draft revision changes; related validation/plan is stale; an active run remains unchanged.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-015",
+      "group": "Document identity",
+      "milestone": "U2",
+      "layer": "unit_property",
+      "spec_sections": "9",
+      "invariant_ids": [
+        "UI-INV-05",
+        "UI-INV-06",
+        "UI-INV-15",
+        "UI-INV-18"
+      ],
+      "title": "Rename stability",
+      "setup": "Two nodes are wired and linked to past runs.",
+      "action": "Rename one display label.",
+      "expected_outcome": "Stable IDs and historical result mappings do not change.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-016",
+      "group": "Document identity",
+      "milestone": "U2",
+      "layer": "unit_property",
+      "spec_sections": "9",
+      "invariant_ids": [
+        "UI-INV-05",
+        "UI-INV-06",
+        "UI-INV-15",
+        "UI-INV-18"
+      ],
+      "title": "Duplicate ID remapping",
+      "setup": "A selection contains internal edges and an external input.",
+      "action": "Duplicate the selection.",
+      "expected_outcome": "Fresh IDs and internal remaps are exact; external binding is explicit, not guessed.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-017",
+      "group": "Document identity",
+      "milestone": "U2",
+      "layer": "unit_property",
+      "spec_sections": "9",
+      "invariant_ids": [
+        "UI-INV-05",
+        "UI-INV-06",
+        "UI-INV-15",
+        "UI-INV-18"
+      ],
+      "title": "Cross-host ID collision",
+      "setup": "Host B has an object ID equal to a Host A object ID.",
+      "action": "Import an A-bound document while connected to B.",
+      "expected_outcome": "Binding remains unresolved until authorized rebinding; ID equality does not grant access.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-018",
+      "group": "Document identity",
+      "milestone": "U2",
+      "layer": "unit_property",
+      "spec_sections": "9",
+      "invariant_ids": [
+        "UI-INV-05",
+        "UI-INV-06",
+        "UI-INV-15",
+        "UI-INV-18"
+      ],
+      "title": "Host-binding spoof",
+      "setup": "Editor JSON includes a plausible historical host reference.",
+      "action": "Import it.",
+      "expected_outcome": "Reference is non-authoritative and re-resolved; it cannot supply evidence or permission.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-019",
+      "group": "Exact input fidelity",
+      "milestone": "U2",
+      "layer": "unit_property",
+      "spec_sections": "11, 12",
+      "invariant_ids": [
+        "UI-INV-04",
+        "UI-INV-15"
+      ],
+      "title": "Integer beyond binary safe range",
+      "setup": "Input value is 9007199254740993 as canonical text.",
+      "action": "Edit, save, reload, copy and submit through fixture validation.",
+      "expected_outcome": "Every operation preserves the exact decimal string without conversion to Number.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-020",
+      "group": "Exact input fidelity",
+      "milestone": "U2",
+      "layer": "unit_property",
+      "spec_sections": "11, 12",
+      "invariant_ids": [
+        "UI-INV-04",
+        "UI-INV-15"
+      ],
+      "title": "Large rational",
+      "setup": "Numerator and denominator each contain thousands of digits.",
+      "action": "Roundtrip within configured size limits.",
+      "expected_outcome": "Canonical text survives exactly; no numeric overflow, scientific-notation rewrite, or truncation.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-021",
+      "group": "Exact input fidelity",
+      "milestone": "U2",
+      "layer": "unit_property",
+      "spec_sections": "11, 12",
+      "invariant_ids": [
+        "UI-INV-04",
+        "UI-INV-15"
+      ],
+      "title": "Zero denominator",
+      "setup": "A rational draft has denominator 0.",
+      "action": "Validate or attempt planning.",
+      "expected_outcome": "Draft is recoverable; explicit error blocks submission; no Infinity conversion occurs.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-022",
+      "group": "Exact input fidelity",
+      "milestone": "U2",
+      "layer": "unit_property",
+      "spec_sections": "11, 12",
+      "invariant_ids": [
+        "UI-INV-04",
+        "UI-INV-15"
+      ],
+      "title": "Dutch decimal comma",
+      "setup": "Numeric input uses 1,25 in a locale-sensitive field.",
+      "action": "Commit it under supported and unsupported locale modes.",
+      "expected_outcome": "Interpretation is explicit and previewed or rejected; it never silently becomes two values.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-023",
+      "group": "Exact input fidelity",
+      "milestone": "U2",
+      "layer": "unit_property",
+      "spec_sections": "11, 12",
+      "invariant_ids": [
+        "UI-INV-04",
+        "UI-INV-15"
+      ],
+      "title": "Missing versus null versus zero",
+      "setup": "Field states are unset, null, blank text, and zero.",
+      "action": "Switch states and serialize.",
+      "expected_outcome": "Distinct states survive according to schema; defaults are not silently substituted.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-024",
+      "group": "Exact input fidelity",
+      "milestone": "U2",
+      "layer": "unit_property",
+      "spec_sections": "11, 12",
+      "invariant_ids": [
+        "UI-INV-04",
+        "UI-INV-15"
+      ],
+      "title": "Display precision isolation",
+      "setup": "An accepted result has a small nonzero residual.",
+      "action": "Reduce visible precision.",
+      "expected_outcome": "Only display changes; rounded value is identified and full residual remains available.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-025",
+      "group": "Command and canvas semantics",
+      "milestone": "U2",
+      "layer": "component",
+      "spec_sections": "10",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-06",
+        "UI-INV-12",
+        "UI-INV-16",
+        "UI-INV-19"
+      ],
+      "title": "Atomic reconnect cancel",
+      "setup": "An existing edge is being rewired.",
+      "action": "Cancel or drop onto an invalid target.",
+      "expected_outcome": "Original edge remains; undo history has no partial disconnect.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-026",
+      "group": "Command and canvas semantics",
+      "milestone": "U2",
+      "layer": "component",
+      "spec_sections": "10",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-06",
+        "UI-INV-12",
+        "UI-INV-16",
+        "UI-INV-19"
+      ],
+      "title": "Undo without effects",
+      "setup": "An edited graph has a submitted run.",
+      "action": "Undo and redo recent draft edits.",
+      "expected_outcome": "Only draft/presentation changes occur; run is not cancelled, replayed, or reauthorized.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-027",
+      "group": "Command and canvas semantics",
+      "milestone": "U2",
+      "layer": "component",
+      "spec_sections": "10",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-06",
+        "UI-INV-12",
+        "UI-INV-16",
+        "UI-INV-19"
+      ],
+      "title": "Delete visual group",
+      "setup": "A frame contains nodes referenced by a past run.",
+      "action": "Delete frame only.",
+      "expected_outcome": "Member nodes and host objects/results remain intact.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-028",
+      "group": "Command and canvas semantics",
+      "milestone": "U2",
+      "layer": "component",
+      "spec_sections": "10",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-06",
+        "UI-INV-12",
+        "UI-INV-16",
+        "UI-INV-19"
+      ],
+      "title": "Single-input replacement",
+      "setup": "A destination has one occupied nonvariadic input.",
+      "action": "Attempt a second connection.",
+      "expected_outcome": "Explicit Replace is required; no silent rewiring.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-029",
+      "group": "Command and canvas semantics",
+      "milestone": "U2",
+      "layer": "component",
+      "spec_sections": "10",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-06",
+        "UI-INV-12",
+        "UI-INV-16",
+        "UI-INV-19"
+      ],
+      "title": "Form shortcut protection",
+      "setup": "An expression textarea has focus.",
+      "action": "Press Delete, Enter, Escape and an IME composition sequence.",
+      "expected_outcome": "Text editing is preserved; no accidental node deletion, run, or approval occurs.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-030",
+      "group": "Command and canvas semantics",
+      "milestone": "U2",
+      "layer": "component",
+      "spec_sections": "10",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-06",
+        "UI-INV-12",
+        "UI-INV-16",
+        "UI-INV-19"
+      ],
+      "title": "Click-only authoring",
+      "setup": "Pointer dragging is unavailable.",
+      "action": "Add, connect, move, reorder and disconnect nodes through controls.",
+      "expected_outcome": "The same document commands and validation apply as on the canvas.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-031",
+      "group": "Port compatibility",
+      "milestone": "U2",
+      "layer": "unit_contract",
+      "spec_sections": "11",
+      "invariant_ids": [
+        "UI-INV-04",
+        "UI-INV-08",
+        "UI-INV-11",
+        "UI-INV-15"
+      ],
+      "title": "Known shape mismatch",
+      "setup": "Dot-product inputs have lengths 200 and 256.",
+      "action": "Attempt connection and validation.",
+      "expected_outcome": "Known mismatch is identified with both dimensions; no implicit reshape.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-032",
+      "group": "Port compatibility",
+      "milestone": "U2",
+      "layer": "unit_contract",
+      "spec_sections": "11",
+      "invariant_ids": [
+        "UI-INV-04",
+        "UI-INV-08",
+        "UI-INV-11",
+        "UI-INV-15"
+      ],
+      "title": "Symbolic dimension",
+      "setup": "An input length is symbolic n.",
+      "action": "Connect to a known-length input.",
+      "expected_outcome": "Unresolved equality is requires_check; no invented n value.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-033",
+      "group": "Port compatibility",
+      "milestone": "U2",
+      "layer": "unit_contract",
+      "spec_sections": "11",
+      "invariant_ids": [
+        "UI-INV-04",
+        "UI-INV-08",
+        "UI-INV-11",
+        "UI-INV-15"
+      ],
+      "title": "Exact-to-numeric cast",
+      "setup": "Exact rational data targets a floating-only port.",
+      "action": "Connect them.",
+      "expected_outcome": "Conversion is rejected or explicitly inserted from a registered operation after review.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-034",
+      "group": "Port compatibility",
+      "milestone": "U2",
+      "layer": "unit_contract",
+      "spec_sections": "11",
+      "invariant_ids": [
+        "UI-INV-04",
+        "UI-INV-08",
+        "UI-INV-11",
+        "UI-INV-15"
+      ],
+      "title": "Finite-field representation",
+      "setup": "Two field inputs have incompatible representation identifiers.",
+      "action": "Connect to a field-sensitive operation.",
+      "expected_outcome": "The UI does not equate them by label; host-supported conversion/rebinding is required.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-035",
+      "group": "Port compatibility",
+      "milestone": "U2",
+      "layer": "unit_contract",
+      "spec_sections": "11",
+      "invariant_ids": [
+        "UI-INV-04",
+        "UI-INV-08",
+        "UI-INV-11",
+        "UI-INV-15"
+      ],
+      "title": "Ordered variadic inputs",
+      "setup": "A collection port declares ordering.",
+      "action": "Reorder connections.",
+      "expected_outcome": "Declared input order changes explicitly and invalidates the mathematical revision; geometry is irrelevant.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-036",
+      "group": "Port compatibility",
+      "milestone": "U2",
+      "layer": "unit_contract",
+      "spec_sections": "11",
+      "invariant_ids": [
+        "UI-INV-04",
+        "UI-INV-08",
+        "UI-INV-11",
+        "UI-INV-15"
+      ],
+      "title": "Context mismatch",
+      "setup": "Inputs have conflicting domain or unit context.",
+      "action": "Validate the graph.",
+      "expected_outcome": "Host obligation/diagnostic is shown; the browser does not merge assumptions silently.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-037",
+      "group": "Inspectors and schemas",
+      "milestone": "U2",
+      "layer": "component_security",
+      "spec_sections": "8, 12, 23",
+      "invariant_ids": [
+        "UI-INV-04",
+        "UI-INV-09",
+        "UI-INV-11",
+        "UI-INV-17"
+      ],
+      "title": "Requiredness is not guessed",
+      "setup": "Legacy hints omit required fields.",
+      "action": "Generate a form.",
+      "expected_outcome": "Coverage is disclosed; unspecified requiredness remains host-validated.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-038",
+      "group": "Inspectors and schemas",
+      "milestone": "U2",
+      "layer": "component_security",
+      "spec_sections": "8, 12, 23",
+      "invariant_ids": [
+        "UI-INV-04",
+        "UI-INV-09",
+        "UI-INV-11",
+        "UI-INV-17"
+      ],
+      "title": "Default versus omission",
+      "setup": "Schema defines a default but omission has host meaning.",
+      "action": "Open and save without editing.",
+      "expected_outcome": "Opening the form does not turn the default into explicit user input.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-039",
+      "group": "Inspectors and schemas",
+      "milestone": "U2",
+      "layer": "component_security",
+      "spec_sections": "8, 12, 23",
+      "invariant_ids": [
+        "UI-INV-04",
+        "UI-INV-09",
+        "UI-INV-11",
+        "UI-INV-17"
+      ],
+      "title": "Hostile schema reference",
+      "setup": "A schema references an arbitrary network URL.",
+      "action": "Open its inspector.",
+      "expected_outcome": "No external fetch occurs; unresolved reference is reported.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-040",
+      "group": "Inspectors and schemas",
+      "milestone": "U2",
+      "layer": "component_security",
+      "spec_sections": "8, 12, 23",
+      "invariant_ids": [
+        "UI-INV-04",
+        "UI-INV-09",
+        "UI-INV-11",
+        "UI-INV-17"
+      ],
+      "title": "No eval validator",
+      "setup": "CSP disallows eval and runtime function construction.",
+      "action": "Validate supported dynamic fields.",
+      "expected_outcome": "Known validators/subset work without unsafe-eval; unsupported checks defer to host.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-041",
+      "group": "Inspectors and schemas",
+      "milestone": "U2",
+      "layer": "component_security",
+      "spec_sections": "8, 12, 23",
+      "invariant_ids": [
+        "UI-INV-04",
+        "UI-INV-09",
+        "UI-INV-11",
+        "UI-INV-17"
+      ],
+      "title": "KaTeX hostile input",
+      "setup": "Expression contains unsafe commands, oversized layout and recursive macros.",
+      "action": "Render preview and errors.",
+      "expected_outcome": "Limits apply; no active HTML/network loading; errors are escaped and isolated.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-042",
+      "group": "Inspectors and schemas",
+      "milestone": "U2",
+      "layer": "component_security",
+      "spec_sections": "8, 12, 23",
+      "invariant_ids": [
+        "UI-INV-04",
+        "UI-INV-09",
+        "UI-INV-11",
+        "UI-INV-17"
+      ],
+      "title": "Matrix paste review",
+      "setup": "Clipboard has ragged rows and mixed decimal separators.",
+      "action": "Paste into matrix editor.",
+      "expected_outcome": "Preview identifies interpretation/errors before binding; no formula execution or silent cell conversion.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-043",
+      "group": "Fragments and subworkflows",
+      "milestone": "U5",
+      "layer": "unit_contract",
+      "spec_sections": "13",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-02",
+        "UI-INV-06",
+        "UI-INV-18",
+        "UI-INV-20"
+      ],
+      "title": "Fragment insertion inert",
+      "setup": "Fragment includes valid and unavailable operations.",
+      "action": "Insert into a draft.",
+      "expected_outcome": "IDs remap, missing bindings are explicit, and no host execution occurs.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-044",
+      "group": "Fragments and subworkflows",
+      "milestone": "U5",
+      "layer": "unit_contract",
+      "spec_sections": "13",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-02",
+        "UI-INV-06",
+        "UI-INV-18",
+        "UI-INV-20"
+      ],
+      "title": "Fragment update isolation",
+      "setup": "Several documents used an older fragment copy.",
+      "action": "Save a newer fragment.",
+      "expected_outcome": "Existing documents do not mutate; updating requires an explicit diff-and-replace action.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-045",
+      "group": "Fragments and subworkflows",
+      "milestone": "U5",
+      "layer": "unit_contract",
+      "spec_sections": "13",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-02",
+        "UI-INV-06",
+        "UI-INV-18",
+        "UI-INV-20"
+      ],
+      "title": "Collapse warning retention",
+      "setup": "Group contains invalid input and a cleanup warning.",
+      "action": "Collapse the group.",
+      "expected_outcome": "Aggregated warning remains visible and navigable.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-046",
+      "group": "Fragments and subworkflows",
+      "milestone": "U5",
+      "layer": "unit_contract",
+      "spec_sections": "13",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-02",
+        "UI-INV-06",
+        "UI-INV-18",
+        "UI-INV-20"
+      ],
+      "title": "GPU frame inertness",
+      "setup": "A visual frame is labelled GPU.",
+      "action": "Move a node into it.",
+      "expected_outcome": "No engine/target change occurs from geometry or label alone.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-047",
+      "group": "Fragments and subworkflows",
+      "milestone": "U5",
+      "layer": "unit_contract",
+      "spec_sections": "13",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-02",
+        "UI-INV-06",
+        "UI-INV-18",
+        "UI-INV-20"
+      ],
+      "title": "Unsupported loop",
+      "setup": "Imported graph contains a loop/control operation the host does not advertise.",
+      "action": "Open and attempt validation.",
+      "expected_outcome": "Node stays unresolved/unavailable; no JavaScript loop emulates execution.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-048",
+      "group": "Fragments and subworkflows",
+      "milestone": "U5",
+      "layer": "unit_contract",
+      "spec_sections": "13",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-02",
+        "UI-INV-06",
+        "UI-INV-18",
+        "UI-INV-20"
+      ],
+      "title": "Host subworkflow version",
+      "setup": "A subworkflow instance refers to version A.",
+      "action": "Edit its host definition to version B.",
+      "expected_outcome": "Existing run remains A; draft update requires explicit review and refreshed mapping.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-049",
+      "group": "Validation diagnostics",
+      "milestone": "U2",
+      "layer": "contract",
+      "spec_sections": "14",
+      "invariant_ids": [
+        "UI-INV-08",
+        "UI-INV-11",
+        "UI-INV-15",
+        "UI-INV-19"
+      ],
+      "title": "Validation scope labels",
+      "setup": "Editor checks pass but host validation is absent.",
+      "action": "Read the Problems summary.",
+      "expected_outcome": "It says editor checks passed, not verified or runnable.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-050",
+      "group": "Validation diagnostics",
+      "milestone": "U2",
+      "layer": "contract",
+      "spec_sections": "14",
+      "invariant_ids": [
+        "UI-INV-08",
+        "UI-INV-11",
+        "UI-INV-15",
+        "UI-INV-19"
+      ],
+      "title": "Stale validation response",
+      "setup": "Revision 17 validation returns after editing revision 18.",
+      "action": "Apply incoming response.",
+      "expected_outcome": "It cannot clear current diagnostics; scope/revision is visible.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-051",
+      "group": "Validation diagnostics",
+      "milestone": "U2",
+      "layer": "contract",
+      "spec_sections": "14",
+      "invariant_ids": [
+        "UI-INV-08",
+        "UI-INV-11",
+        "UI-INV-15",
+        "UI-INV-19"
+      ],
+      "title": "Connected proof node",
+      "setup": "A graph contains a verifier wired downstream.",
+      "action": "Inspect authoring evidence badges.",
+      "expected_outcome": "Only planned check/expected support is displayed; no established proof badge.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-052",
+      "group": "Validation diagnostics",
+      "milestone": "U2",
+      "layer": "contract",
+      "spec_sections": "14",
+      "invariant_ids": [
+        "UI-INV-08",
+        "UI-INV-11",
+        "UI-INV-15",
+        "UI-INV-19"
+      ],
+      "title": "Safe repair choice",
+      "setup": "Host diagnostic suggests a registered conversion.",
+      "action": "Accept repair.",
+      "expected_outcome": "Semantic effect is reviewed and one draft transaction occurs; no hidden run.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-053",
+      "group": "Validation diagnostics",
+      "milestone": "U2",
+      "layer": "contract",
+      "spec_sections": "14",
+      "invariant_ids": [
+        "UI-INV-08",
+        "UI-INV-11",
+        "UI-INV-15",
+        "UI-INV-19"
+      ],
+      "title": "Unbounded expensive validation",
+      "setup": "Typing rapidly would trigger costly host validation.",
+      "action": "Enter a long expression.",
+      "expected_outcome": "Requests are bounded/debounced or manual; no unbounded mathematical work is hidden in keystrokes.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-054",
+      "group": "Validation diagnostics",
+      "milestone": "U2",
+      "layer": "contract",
+      "spec_sections": "14",
+      "invariant_ids": [
+        "UI-INV-08",
+        "UI-INV-11",
+        "UI-INV-15",
+        "UI-INV-19"
+      ],
+      "title": "Unsupported cycle",
+      "setup": "A cyclic draft is imported into an acyclic-only host.",
+      "action": "Validate.",
+      "expected_outcome": "Cycle stays inspectable with blocking diagnostic; no edge is silently removed.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-055",
+      "group": "Plan and revision binding",
+      "milestone": "U4",
+      "layer": "contract",
+      "spec_sections": "15, 20",
+      "invariant_ids": [
+        "UI-INV-05",
+        "UI-INV-06",
+        "UI-INV-15",
+        "UI-INV-19"
+      ],
+      "title": "Plan digest binding",
+      "setup": "Host returns immutable plan for draft revision 12.",
+      "action": "Submit from review.",
+      "expected_outcome": "Only that host plan/authority reference is sent, not a later mutable draft.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-056",
+      "group": "Plan and revision binding",
+      "milestone": "U4",
+      "layer": "contract",
+      "spec_sections": "15, 20",
+      "invariant_ids": [
+        "UI-INV-05",
+        "UI-INV-06",
+        "UI-INV-15",
+        "UI-INV-19"
+      ],
+      "title": "Plan-expiry race",
+      "setup": "Plan expires while review is open.",
+      "action": "Press Confirm.",
+      "expected_outcome": "Host rejection is shown; UI does not renew approval automatically.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-057",
+      "group": "Plan and revision binding",
+      "milestone": "U4",
+      "layer": "contract",
+      "spec_sections": "15, 20",
+      "invariant_ids": [
+        "UI-INV-05",
+        "UI-INV-06",
+        "UI-INV-15",
+        "UI-INV-19"
+      ],
+      "title": "Semantic edit invalidates plan",
+      "setup": "Target preference or arithmetic precision changes.",
+      "action": "Return to Run.",
+      "expected_outcome": "Prior plan is marked obsolete; fresh host planning is required.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-058",
+      "group": "Plan and revision binding",
+      "milestone": "U4",
+      "layer": "contract",
+      "spec_sections": "15, 20",
+      "invariant_ids": [
+        "UI-INV-05",
+        "UI-INV-06",
+        "UI-INV-15",
+        "UI-INV-19"
+      ],
+      "title": "Run overlay revision",
+      "setup": "Revision 12 is running while revision 13 is edited.",
+      "action": "Inspect canvas/run tabs.",
+      "expected_outcome": "Each overlay identifies its frozen revision; old success is not shown as current draft success.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-059",
+      "group": "Plan and revision binding",
+      "milestone": "U4",
+      "layer": "contract",
+      "spec_sections": "15, 20",
+      "invariant_ids": [
+        "UI-INV-05",
+        "UI-INV-06",
+        "UI-INV-15",
+        "UI-INV-19"
+      ],
+      "title": "Scope preview",
+      "setup": "Selected output requires host-resolved predecessors.",
+      "action": "Plan Run to here.",
+      "expected_outcome": "Review shows exact resolved scope; unsupported scope is unavailable.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-060",
+      "group": "Plan and revision binding",
+      "milestone": "U4",
+      "layer": "contract",
+      "spec_sections": "15, 20",
+      "invariant_ids": [
+        "UI-INV-05",
+        "UI-INV-06",
+        "UI-INV-15",
+        "UI-INV-19"
+      ],
+      "title": "Target as property",
+      "setup": "A workflow has a GPU-preferred operation.",
+      "action": "Inspect authoring and plan.",
+      "expected_outcome": "Engine/target remain separate properties; no fictitious GPU mathematical node appears.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-061",
+      "group": "Execution boundary",
+      "milestone": "U4",
+      "layer": "integration",
+      "spec_sections": "2, 15, 23",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-02",
+        "UI-INV-16",
+        "UI-INV-19",
+        "UI-INV-20"
+      ],
+      "title": "No browser scheduler",
+      "setup": "A three-node workflow is submitted to a capable host.",
+      "action": "Instrument outgoing commands.",
+      "expected_outcome": "One host workflow submission occurs; UI never dispatches predecessors/successors individually.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-062",
+      "group": "Execution boundary",
+      "milestone": "U4",
+      "layer": "integration",
+      "spec_sections": "2, 15, 23",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-02",
+        "UI-INV-16",
+        "UI-INV-19",
+        "UI-INV-20"
+      ],
+      "title": "Mutation retry disabled",
+      "setup": "Submission response is lost after acceptance.",
+      "action": "Allow network/query retries and component remounts.",
+      "expected_outcome": "No blind second submission; UI correlates existing request through host.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-063",
+      "group": "Execution boundary",
+      "milestone": "U4",
+      "layer": "integration",
+      "spec_sections": "2, 15, 23",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-02",
+        "UI-INV-16",
+        "UI-INV-19",
+        "UI-INV-20"
+      ],
+      "title": "Close browser independence",
+      "setup": "A real host run is active.",
+      "action": "Close Studio, then reopen.",
+      "expected_outcome": "Host continues owning run; UI reconstructs state without replaying actions.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-064",
+      "group": "Execution boundary",
+      "milestone": "U4",
+      "layer": "integration",
+      "spec_sections": "2, 15, 23",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-02",
+        "UI-INV-16",
+        "UI-INV-19",
+        "UI-INV-20"
+      ],
+      "title": "HTTP abort not cancel",
+      "setup": "A status or preview request is aborted.",
+      "action": "Inspect run state.",
+      "expected_outcome": "Only request cancellation is shown; backend computation is not declared stopped.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-065",
+      "group": "Execution boundary",
+      "milestone": "U4",
+      "layer": "integration",
+      "spec_sections": "2, 15, 23",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-02",
+        "UI-INV-16",
+        "UI-INV-19",
+        "UI-INV-20"
+      ],
+      "title": "Live preview off by default",
+      "setup": "A heavy parameter is controlled by a slider.",
+      "action": "Move it repeatedly.",
+      "expected_outcome": "Only draft changes occur unless a separate bounded host preview session is enabled.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-066",
+      "group": "Execution boundary",
+      "milestone": "U4",
+      "layer": "integration",
+      "spec_sections": "2, 15, 23",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-02",
+        "UI-INV-16",
+        "UI-INV-19",
+        "UI-INV-20"
+      ],
+      "title": "Standalone is not workflow fallback",
+      "setup": "Workflow support is unavailable but operation invocation works.",
+      "action": "Attempt Run workflow.",
+      "expected_outcome": "Action remains unavailable; UI does not chain standalone requests.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-067",
+      "group": "Event and reconnect behavior",
+      "milestone": "U4",
+      "layer": "contract",
+      "spec_sections": "16",
+      "invariant_ids": [
+        "UI-INV-05",
+        "UI-INV-07",
+        "UI-INV-11",
+        "UI-INV-16"
+      ],
+      "title": "Snapshot watermark race",
+      "setup": "Events arrive between snapshot creation and subscription.",
+      "action": "Reconnect using the supplied cursor.",
+      "expected_outcome": "No event gap; host replay or resnapshot establishes current state.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-068",
+      "group": "Event and reconnect behavior",
+      "milestone": "U4",
+      "layer": "contract",
+      "spec_sections": "16",
+      "invariant_ids": [
+        "UI-INV-05",
+        "UI-INV-07",
+        "UI-INV-11",
+        "UI-INV-16"
+      ],
+      "title": "Duplicate event",
+      "setup": "Same event ID is delivered twice.",
+      "action": "Apply both observations.",
+      "expected_outcome": "One effective state update; no duplicate results or attempts.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-069",
+      "group": "Event and reconnect behavior",
+      "milestone": "U4",
+      "layer": "contract",
+      "spec_sections": "16",
+      "invariant_ids": [
+        "UI-INV-05",
+        "UI-INV-07",
+        "UI-INV-11",
+        "UI-INV-16"
+      ],
+      "title": "Out-of-order revision",
+      "setup": "Lower entity revision arrives after a newer terminal state.",
+      "action": "Apply incoming event.",
+      "expected_outcome": "Newer state remains authoritative; old data cannot revert it.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-070",
+      "group": "Event and reconnect behavior",
+      "milestone": "U4",
+      "layer": "contract",
+      "spec_sections": "16",
+      "invariant_ids": [
+        "UI-INV-05",
+        "UI-INV-07",
+        "UI-INV-11",
+        "UI-INV-16"
+      ],
+      "title": "Expired cursor",
+      "setup": "Event retention no longer includes saved cursor.",
+      "action": "Reconnect.",
+      "expected_outcome": "Fresh snapshot is requested; missing events are not invented.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-071",
+      "group": "Event and reconnect behavior",
+      "milestone": "U4",
+      "layer": "contract",
+      "spec_sections": "16",
+      "invariant_ids": [
+        "UI-INV-05",
+        "UI-INV-07",
+        "UI-INV-11",
+        "UI-INV-16"
+      ],
+      "title": "Authentication expires",
+      "setup": "Session loses permission during an active stream.",
+      "action": "Process denial.",
+      "expected_outcome": "Private fetches stop, sensitive previews are cleared per policy, no mutations replay.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-072",
+      "group": "Event and reconnect behavior",
+      "milestone": "U4",
+      "layer": "contract",
+      "spec_sections": "16",
+      "invariant_ids": [
+        "UI-INV-05",
+        "UI-INV-07",
+        "UI-INV-11",
+        "UI-INV-16"
+      ],
+      "title": "Host-switch late response",
+      "setup": "Host A response arrives after switching to B.",
+      "action": "Receive old payload.",
+      "expected_outcome": "Scope mismatch is rejected; A data never enters B state.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-073",
+      "group": "Evidence presentation",
+      "milestone": "U3",
+      "layer": "contract",
+      "spec_sections": "17",
+      "invariant_ids": [
+        "UI-INV-03",
+        "UI-INV-05",
+        "UI-INV-07",
+        "UI-INV-08",
+        "UI-INV-11"
+      ],
+      "title": "Trust versus status",
+      "setup": "Result has trust numeric and semantic_status verified_numeric.",
+      "action": "Render badges.",
+      "expected_outcome": "Both fields remain distinct; no new verified_numeric trust level is invented.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-074",
+      "group": "Evidence presentation",
+      "milestone": "U3",
+      "layer": "contract",
+      "spec_sections": "17",
+      "invariant_ids": [
+        "UI-INV-03",
+        "UI-INV-05",
+        "UI-INV-07",
+        "UI-INV-08",
+        "UI-INV-11"
+      ],
+      "title": "Candidate formal spoof",
+      "setup": "Raw candidate text claims formal and verified=true.",
+      "action": "Open result/graph view.",
+      "expected_outcome": "Persistent unverified-candidate treatment; claims stay untrusted metadata.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-075",
+      "group": "Evidence presentation",
+      "milestone": "U3",
+      "layer": "contract",
+      "spec_sections": "17",
+      "invariant_ids": [
+        "UI-INV-03",
+        "UI-INV-05",
+        "UI-INV-07",
+        "UI-INV-08",
+        "UI-INV-11"
+      ],
+      "title": "Partial claim support",
+      "setup": "Host establishes feasibility but not global optimality.",
+      "action": "Inspect compact and detailed evidence.",
+      "expected_outcome": "Summary preserves the unresolved claim; whole result is not called globally optimal.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-076",
+      "group": "Evidence presentation",
+      "milestone": "U3",
+      "layer": "contract",
+      "spec_sections": "17",
+      "invariant_ids": [
+        "UI-INV-03",
+        "UI-INV-05",
+        "UI-INV-07",
+        "UI-INV-08",
+        "UI-INV-11"
+      ],
+      "title": "Independent certificate",
+      "setup": "Host admits an independent local proof for remotely found candidate.",
+      "action": "Render support paths.",
+      "expected_outcome": "Valid admitted claim is retained; remote origin is not indiscriminately used to downgrade it.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-077",
+      "group": "Evidence presentation",
+      "milestone": "U3",
+      "layer": "contract",
+      "spec_sections": "17",
+      "invariant_ids": [
+        "UI-INV-03",
+        "UI-INV-05",
+        "UI-INV-07",
+        "UI-INV-08",
+        "UI-INV-11"
+      ],
+      "title": "Approximate ancestry",
+      "setup": "Exact downstream arithmetic used rounded source data.",
+      "action": "Inspect result and source tree.",
+      "expected_outcome": "Approximate-input ancestry and conditional scope remain visible.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-078",
+      "group": "Evidence presentation",
+      "milestone": "U3",
+      "layer": "contract",
+      "spec_sections": "17",
+      "invariant_ids": [
+        "UI-INV-03",
+        "UI-INV-05",
+        "UI-INV-07",
+        "UI-INV-08",
+        "UI-INV-11"
+      ],
+      "title": "Verifier timeout",
+      "setup": "Host reports inconclusive verification due to resource limit.",
+      "action": "Inspect node and run.",
+      "expected_outcome": "Not shown as disproved, failed mathematics, or established proof.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-079",
+      "group": "Result receipts and data",
+      "milestone": "U3",
+      "layer": "contract",
+      "spec_sections": "18",
+      "invariant_ids": [
+        "UI-INV-03",
+        "UI-INV-05",
+        "UI-INV-07",
+        "UI-INV-11",
+        "UI-INV-13"
+      ],
+      "title": "Receipt is not result",
+      "setup": "Output budget returns resource receipt with original_trust metadata.",
+      "action": "Open it.",
+      "expected_outcome": "UI fetches authorized result pages; receipt cannot create accepted evidence.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-080",
+      "group": "Result receipts and data",
+      "milestone": "U3",
+      "layer": "contract",
+      "spec_sections": "18",
+      "invariant_ids": [
+        "UI-INV-03",
+        "UI-INV-05",
+        "UI-INV-07",
+        "UI-INV-11",
+        "UI-INV-13"
+      ],
+      "title": "Partial page loading",
+      "setup": "Only part of a large result is available.",
+      "action": "Inspect evidence panel.",
+      "expected_outcome": "Partial coverage is explicit; unseen assumptions/errors are not treated as absent.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-081",
+      "group": "Result receipts and data",
+      "milestone": "U3",
+      "layer": "contract",
+      "spec_sections": "18",
+      "invariant_ids": [
+        "UI-INV-03",
+        "UI-INV-05",
+        "UI-INV-07",
+        "UI-INV-11",
+        "UI-INV-13"
+      ],
+      "title": "Expired result resource",
+      "setup": "Host returns unknown_or_expired_resource.",
+      "action": "Open old run.",
+      "expected_outcome": "Expiry is displayed; no automatic recomputation or mathematical-failure claim.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-082",
+      "group": "Result receipts and data",
+      "milestone": "U3",
+      "layer": "contract",
+      "spec_sections": "18",
+      "invariant_ids": [
+        "UI-INV-03",
+        "UI-INV-05",
+        "UI-INV-07",
+        "UI-INV-11",
+        "UI-INV-13"
+      ],
+      "title": "Exact table copy",
+      "setup": "Table contains large exact integers.",
+      "action": "Copy visible/full cell values.",
+      "expected_outcome": "Exact text survives; display truncation does not affect copied canonical value.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-083",
+      "group": "Result receipts and data",
+      "milestone": "U3",
+      "layer": "contract",
+      "spec_sections": "18",
+      "invariant_ids": [
+        "UI-INV-03",
+        "UI-INV-05",
+        "UI-INV-07",
+        "UI-INV-11",
+        "UI-INV-13"
+      ],
+      "title": "Page-only sort",
+      "setup": "Only 100 of many rows are loaded.",
+      "action": "Sort locally.",
+      "expected_outcome": "UI says loaded-page sorting, not whole-dataset sorting.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-084",
+      "group": "Result receipts and data",
+      "milestone": "U3",
+      "layer": "contract",
+      "spec_sections": "18",
+      "invariant_ids": [
+        "UI-INV-03",
+        "UI-INV-05",
+        "UI-INV-07",
+        "UI-INV-11",
+        "UI-INV-13"
+      ],
+      "title": "Candidate admission transition",
+      "setup": "An artifact was previously candidate-only.",
+      "action": "Receive a distinct accepted host result reference.",
+      "expected_outcome": "Badge changes only with authenticated admitted result and bound claim identity.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-085",
+      "group": "Active artifact safety",
+      "milestone": "U6",
+      "layer": "security_browser",
+      "spec_sections": "18, 24",
+      "invariant_ids": [
+        "UI-INV-03",
+        "UI-INV-09",
+        "UI-INV-10",
+        "UI-INV-17",
+        "UI-INV-19"
+      ],
+      "title": "Untrusted HTML",
+      "setup": "Artifact contains scripts, forms and network requests.",
+      "action": "Open normal preview.",
+      "expected_outcome": "It stays inert or scripts-disabled; never executes on parent origin.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-086",
+      "group": "Active artifact safety",
+      "milestone": "U6",
+      "layer": "security_browser",
+      "spec_sections": "18, 24",
+      "invariant_ids": [
+        "UI-INV-03",
+        "UI-INV-09",
+        "UI-INV-10",
+        "UI-INV-17",
+        "UI-INV-19"
+      ],
+      "title": "SVG injection",
+      "setup": "Image-labelled SVG contains active elements.",
+      "action": "Render or download preview.",
+      "expected_outcome": "No direct unsafe insertion into parent DOM; safe media path/fallback used.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-087",
+      "group": "Active artifact safety",
+      "milestone": "U6",
+      "layer": "security_browser",
+      "spec_sections": "18, 24",
+      "invariant_ids": [
+        "UI-INV-03",
+        "UI-INV-09",
+        "UI-INV-10",
+        "UI-INV-17",
+        "UI-INV-19"
+      ],
+      "title": "Forged viewer command",
+      "setup": "An iframe sends a message requesting Run or grant change.",
+      "action": "Handle message.",
+      "expected_outcome": "Message is rejected; no privileged host request occurs.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-088",
+      "group": "Active artifact safety",
+      "milestone": "U6",
+      "layer": "security_browser",
+      "spec_sections": "18, 24",
+      "invariant_ids": [
+        "UI-INV-03",
+        "UI-INV-09",
+        "UI-INV-10",
+        "UI-INV-17",
+        "UI-INV-19"
+      ],
+      "title": "Opaque-origin channel spoof",
+      "setup": "Unrelated frame sends origin-null message with wrong nonce/source.",
+      "action": "Receive event.",
+      "expected_outcome": "Strict frame/channel/artifact binding rejects it.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-089",
+      "group": "Active artifact safety",
+      "milestone": "U6",
+      "layer": "security_browser",
+      "spec_sections": "18, 24",
+      "invariant_ids": [
+        "UI-INV-03",
+        "UI-INV-09",
+        "UI-INV-10",
+        "UI-INV-17",
+        "UI-INV-19"
+      ],
+      "title": "Viewer network confinement",
+      "setup": "Supported active viewer attempts nonallowlisted fetch/navigation.",
+      "action": "Exercise isolated viewer.",
+      "expected_outcome": "Browser policies and fixed renderer reject the attempt; credentials remain unavailable.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-090",
+      "group": "Active artifact safety",
+      "milestone": "U6",
+      "layer": "security_browser",
+      "spec_sections": "18, 24",
+      "invariant_ids": [
+        "UI-INV-03",
+        "UI-INV-09",
+        "UI-INV-10",
+        "UI-INV-17",
+        "UI-INV-19"
+      ],
+      "title": "Viewer crash isolation",
+      "setup": "WebGL context fails repeatedly.",
+      "action": "Open/close the viewer.",
+      "expected_outcome": "Recoverable fallback appears; editor survives; no infinite recreation or resource leak.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-091",
+      "group": "Visualization and audio",
+      "milestone": "U6",
+      "layer": "component_browser",
+      "spec_sections": "19",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-03",
+        "UI-INV-05",
+        "UI-INV-09",
+        "UI-INV-19"
+      ],
+      "title": "Display versus recompute",
+      "setup": "Viewer has camera and sampling-range controls.",
+      "action": "Change each control.",
+      "expected_outcome": "Camera is view-only; changed sampling requires explicit host production request.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-092",
+      "group": "Visualization and audio",
+      "milestone": "U6",
+      "layer": "component_browser",
+      "spec_sections": "19",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-03",
+        "UI-INV-05",
+        "UI-INV-09",
+        "UI-INV-19"
+      ],
+      "title": "Information-loss label",
+      "setup": "Projection is sampled and quantized.",
+      "action": "Open and export its preview.",
+      "expected_outcome": "Source identity and loss labels remain visible; rendering does not upgrade evidence.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-093",
+      "group": "Visualization and audio",
+      "milestone": "U6",
+      "layer": "component_browser",
+      "spec_sections": "19",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-03",
+        "UI-INV-05",
+        "UI-INV-09",
+        "UI-INV-19"
+      ],
+      "title": "Audio user action",
+      "setup": "A sonification artifact is selected.",
+      "action": "Open it without pressing Play.",
+      "expected_outcome": "No autoplay, microphone access, speech trigger, or transcription starts.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-094",
+      "group": "Visualization and audio",
+      "milestone": "U6",
+      "layer": "component_browser",
+      "spec_sections": "19",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-03",
+        "UI-INV-05",
+        "UI-INV-09",
+        "UI-INV-19"
+      ],
+      "title": "Audio disposal",
+      "setup": "Audio and one 3D viewer are active.",
+      "action": "Close artifact tabs.",
+      "expected_outcome": "Contexts, buffers, URLs and listeners are disposed; host generation cancellation is not falsely claimed.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-095",
+      "group": "Visualization and audio",
+      "milestone": "U6",
+      "layer": "component_browser",
+      "spec_sections": "19",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-03",
+        "UI-INV-05",
+        "UI-INV-09",
+        "UI-INV-19"
+      ],
+      "title": "Linked source selection",
+      "setup": "Artifact provides only partial source-event mapping.",
+      "action": "Select a chart point.",
+      "expected_outcome": "Only known table/audio matches highlight; missing links are disclosed.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-096",
+      "group": "Visualization and audio",
+      "milestone": "U6",
+      "layer": "component_browser",
+      "spec_sections": "19",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-03",
+        "UI-INV-05",
+        "UI-INV-09",
+        "UI-INV-19"
+      ],
+      "title": "Use selection as input",
+      "setup": "A viewer selection would create new mathematical input.",
+      "action": "Choose the action.",
+      "expected_outcome": "Explicit draft binding/transformation and host validation occur; display state is not silently fed to a solver.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-097",
+      "group": "Approval and export review",
+      "milestone": "U6",
+      "layer": "contract_security",
+      "spec_sections": "20",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-06",
+        "UI-INV-10",
+        "UI-INV-15",
+        "UI-INV-19"
+      ],
+      "title": "Uncertain price",
+      "setup": "Plan quote omits egress and final tax information.",
+      "action": "Review total and confirmation.",
+      "expected_outcome": "Unknown/excluded components and native currency are explicit; no guaranteed cap is invented.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-098",
+      "group": "Approval and export review",
+      "milestone": "U6",
+      "layer": "contract_security",
+      "spec_sections": "20",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-06",
+        "UI-INV-10",
+        "UI-INV-15",
+        "UI-INV-19"
+      ],
+      "title": "Unsupported hard cap",
+      "setup": "Host says hard_spend_cap_supported=false.",
+      "action": "Request strict hard cap.",
+      "expected_outcome": "UI shows host rejection; runtime deadline is not presented as a monetary guarantee.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-099",
+      "group": "Approval and export review",
+      "milestone": "U6",
+      "layer": "contract_security",
+      "spec_sections": "20",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-06",
+        "UI-INV-10",
+        "UI-INV-15",
+        "UI-INV-19"
+      ],
+      "title": "Export ancestor disclosure",
+      "setup": "Selected root has restricted transitive inputs.",
+      "action": "Open export review.",
+      "expected_outcome": "Host-resolved closure/classification is shown; root-only approval cannot hide ancestors.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-100",
+      "group": "Approval and export review",
+      "milestone": "U6",
+      "layer": "contract_security",
+      "spec_sections": "20",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-06",
+        "UI-INV-10",
+        "UI-INV-15",
+        "UI-INV-19"
+      ],
+      "title": "Challenge plan mismatch",
+      "setup": "Approval challenge belongs to older plan digest.",
+      "action": "Try to confirm current plan.",
+      "expected_outcome": "Confirmation is rejected/disabled; no stale authority is reused.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-101",
+      "group": "Approval and export review",
+      "milestone": "U6",
+      "layer": "contract_security",
+      "spec_sections": "20",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-06",
+        "UI-INV-10",
+        "UI-INV-15",
+        "UI-INV-19"
+      ],
+      "title": "Enter key carry-through",
+      "setup": "User submits text with Enter just before approval modal opens.",
+      "action": "Observe focus and events.",
+      "expected_outcome": "A deliberate separate confirmation is required; modal is not auto-approved.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-102",
+      "group": "Approval and export review",
+      "milestone": "U6",
+      "layer": "contract_security",
+      "spec_sections": "20",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-06",
+        "UI-INV-10",
+        "UI-INV-15",
+        "UI-INV-19"
+      ],
+      "title": "Imported approval assertion",
+      "setup": "Graph JSON contains approved=true or grant secret.",
+      "action": "Import and review.",
+      "expected_outcome": "Prohibited authority is rejected/quarantined; no trusted confirmation state is created.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-103",
+      "group": "Lifecycle and exposure",
+      "milestone": "U6",
+      "layer": "contract",
+      "spec_sections": "16, 20",
+      "invariant_ids": [
+        "UI-INV-07",
+        "UI-INV-11",
+        "UI-INV-16"
+      ],
+      "title": "Ready result unresolved resource",
+      "setup": "Host reports accepted result and cleanup_unknown.",
+      "action": "Open run and navigate away.",
+      "expected_outcome": "Both facts remain visible; persistent global warning survives closing graph.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-104",
+      "group": "Lifecycle and exposure",
+      "milestone": "U6",
+      "layer": "contract",
+      "spec_sections": "16, 20",
+      "invariant_ids": [
+        "UI-INV-07",
+        "UI-INV-11",
+        "UI-INV-16"
+      ],
+      "title": "Cancel acknowledgement only",
+      "setup": "Host accepts cancel but has not observed stop.",
+      "action": "Press Request cancellation.",
+      "expected_outcome": "UI says requested/pending, not stopped or billing ended.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-105",
+      "group": "Lifecycle and exposure",
+      "milestone": "U6",
+      "layer": "contract",
+      "spec_sections": "16, 20",
+      "invariant_ids": [
+        "UI-INV-07",
+        "UI-INV-11",
+        "UI-INV-16"
+      ],
+      "title": "Unknown usage",
+      "setup": "Provider final cost is unavailable.",
+      "action": "Render cost panel.",
+      "expected_outcome": "Unknown is displayed, never zero.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-106",
+      "group": "Lifecycle and exposure",
+      "milestone": "U6",
+      "layer": "contract",
+      "spec_sections": "16, 20",
+      "invariant_ids": [
+        "UI-INV-07",
+        "UI-INV-11",
+        "UI-INV-16"
+      ],
+      "title": "Existing user-owned target",
+      "setup": "Host says resource ownership is not_owned.",
+      "action": "Inspect cleanup actions.",
+      "expected_outcome": "No machine termination action is inferred; job-level scope is preserved.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-107",
+      "group": "Lifecycle and exposure",
+      "milestone": "U6",
+      "layer": "contract",
+      "spec_sections": "16, 20",
+      "invariant_ids": [
+        "UI-INV-07",
+        "UI-INV-11",
+        "UI-INV-16"
+      ],
+      "title": "Legacy job missing axes",
+      "setup": "Old local job API has only queued/running/done/failed.",
+      "action": "Display it.",
+      "expected_outcome": "Unreported verification/resource/cost fields remain not reported; guarantees are not fabricated.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-108",
+      "group": "Lifecycle and exposure",
+      "milestone": "U6",
+      "layer": "contract",
+      "spec_sections": "16, 20",
+      "invariant_ids": [
+        "UI-INV-07",
+        "UI-INV-11",
+        "UI-INV-16"
+      ],
+      "title": "Retry scope",
+      "setup": "Failed job retry needs a new host authorization.",
+      "action": "Click Retry.",
+      "expected_outcome": "UI follows host review/approval; prior grant is not reset or expanded locally.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-109",
+      "group": "Recovery and saving",
+      "milestone": "U2",
+      "layer": "browser_contract",
+      "spec_sections": "21",
+      "invariant_ids": [
+        "UI-INV-05",
+        "UI-INV-06",
+        "UI-INV-10",
+        "UI-INV-13",
+        "UI-INV-16"
+      ],
+      "title": "Storage quota failure",
+      "setup": "IndexedDB write fails.",
+      "action": "Edit a draft and trigger autosave.",
+      "expected_outcome": "Visible recovery warning and export fallback; UI does not say saved.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-110",
+      "group": "Recovery and saving",
+      "milestone": "U2",
+      "layer": "browser_contract",
+      "spec_sections": "21",
+      "invariant_ids": [
+        "UI-INV-05",
+        "UI-INV-06",
+        "UI-INV-10",
+        "UI-INV-13",
+        "UI-INV-16"
+      ],
+      "title": "Memory-only policy",
+      "setup": "Workspace forbids browser persistence of inputs.",
+      "action": "Edit and reload.",
+      "expected_outcome": "No sensitive recovery is written; limitation is disclosed before relying on recovery.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-111",
+      "group": "Recovery and saving",
+      "milestone": "U2",
+      "layer": "browser_contract",
+      "spec_sections": "21",
+      "invariant_ids": [
+        "UI-INV-05",
+        "UI-INV-06",
+        "UI-INV-10",
+        "UI-INV-13",
+        "UI-INV-16"
+      ],
+      "title": "Host save conflict",
+      "setup": "Remote revision changed since loading.",
+      "action": "Save with expected prior revision.",
+      "expected_outcome": "Both versions are preserved and diff offered; no unconditional overwrite.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-112",
+      "group": "Recovery and saving",
+      "milestone": "U2",
+      "layer": "browser_contract",
+      "spec_sections": "21",
+      "invariant_ids": [
+        "UI-INV-05",
+        "UI-INV-06",
+        "UI-INV-10",
+        "UI-INV-13",
+        "UI-INV-16"
+      ],
+      "title": "Two-tab edits",
+      "setup": "Two tabs edit the same host document.",
+      "action": "Save competing changes.",
+      "expected_outcome": "Awareness may warn; host revision control remains authoritative.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-113",
+      "group": "Recovery and saving",
+      "milestone": "U2",
+      "layer": "browser_contract",
+      "spec_sections": "21",
+      "invariant_ids": [
+        "UI-INV-05",
+        "UI-INV-06",
+        "UI-INV-10",
+        "UI-INV-13",
+        "UI-INV-16"
+      ],
+      "title": "Recovery no replay",
+      "setup": "Recovery record includes pending run references.",
+      "action": "Restore after crash.",
+      "expected_outcome": "Only read-only host resolution occurs; no preview/run/approval replay.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-114",
+      "group": "Recovery and saving",
+      "milestone": "U2",
+      "layer": "browser_contract",
+      "spec_sections": "21",
+      "invariant_ids": [
+        "UI-INV-05",
+        "UI-INV-06",
+        "UI-INV-10",
+        "UI-INV-13",
+        "UI-INV-16"
+      ],
+      "title": "Delete distinctions",
+      "setup": "A graph has a local recovery copy and a past remote run.",
+      "action": "Delete the draft only.",
+      "expected_outcome": "Run/resources/artifacts are unaffected; deletion scope is explicit.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-115",
+      "group": "Import and export",
+      "milestone": "U2",
+      "layer": "unit_security",
+      "spec_sections": "9, 21",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-04",
+        "UI-INV-09",
+        "UI-INV-10",
+        "UI-INV-18"
+      ],
+      "title": "Duplicate JSON keys",
+      "setup": "Document repeats a critical property.",
+      "action": "Import it.",
+      "expected_outcome": "Parser rejects ambiguity before any host action.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-116",
+      "group": "Import and export",
+      "milestone": "U2",
+      "layer": "unit_security",
+      "spec_sections": "9, 21",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-04",
+        "UI-INV-09",
+        "UI-INV-10",
+        "UI-INV-18"
+      ],
+      "title": "Prototype-key payload",
+      "setup": "Document includes prototype-related malicious keys.",
+      "action": "Parse and merge it.",
+      "expected_outcome": "Strict schema/safe mapping rejects them; object prototypes are unchanged.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-117",
+      "group": "Import and export",
+      "milestone": "U2",
+      "layer": "unit_security",
+      "spec_sections": "9, 21",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-04",
+        "UI-INV-09",
+        "UI-INV-10",
+        "UI-INV-18"
+      ],
+      "title": "Document size/depth caps",
+      "setup": "Input exceeds proposed size or nesting limit.",
+      "action": "Import.",
+      "expected_outcome": "Clean bounded refusal with original file untouched; UI remains responsive.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-118",
+      "group": "Import and export",
+      "milestone": "U2",
+      "layer": "unit_security",
+      "spec_sections": "9, 21",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-04",
+        "UI-INV-09",
+        "UI-INV-10",
+        "UI-INV-18"
+      ],
+      "title": "Unknown major version",
+      "setup": "Editor document declares mk.studio/99.",
+      "action": "Open it.",
+      "expected_outcome": "No guessed migration or execution; safe unsupported-version explanation.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-119",
+      "group": "Import and export",
+      "milestone": "U2",
+      "layer": "unit_security",
+      "spec_sections": "9, 21",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-04",
+        "UI-INV-09",
+        "UI-INV-10",
+        "UI-INV-18"
+      ],
+      "title": "No secrets in export",
+      "setup": "Session has private URLs and a current approval challenge.",
+      "action": "Export Studio document.",
+      "expected_outcome": "Output contains neither credentials nor authority/session material nor live trusted status claims.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-120",
+      "group": "Import and export",
+      "milestone": "U2",
+      "layer": "unit_security",
+      "spec_sections": "9, 21",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-04",
+        "UI-INV-09",
+        "UI-INV-10",
+        "UI-INV-18"
+      ],
+      "title": "Export mode distinction",
+      "setup": "User has draft, existing artifact and host replay capability.",
+      "action": "Open export menu.",
+      "expected_outcome": "Editor/view/artifact/replay actions are clearly distinct and none silently reruns mathematics.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-121",
+      "group": "Session and browser policy",
+      "milestone": "U7",
+      "layer": "security_integration",
+      "spec_sections": "22, 24, 28",
+      "invariant_ids": [
+        "UI-INV-09",
+        "UI-INV-10",
+        "UI-INV-14",
+        "UI-INV-17",
+        "UI-INV-19"
+      ],
+      "title": "Cross-origin mutation",
+      "setup": "Unrelated web origin targets local host.",
+      "action": "Attempt a state-changing request.",
+      "expected_outcome": "Host authentication/origin/CSRF protections reject it; client-only disabling is not sufficient.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-122",
+      "group": "Session and browser policy",
+      "milestone": "U7",
+      "layer": "security_integration",
+      "spec_sections": "22, 24, 28",
+      "invariant_ids": [
+        "UI-INV-09",
+        "UI-INV-10",
+        "UI-INV-14",
+        "UI-INV-17",
+        "UI-INV-19"
+      ],
+      "title": "DNS/host mismatch",
+      "setup": "Request uses unexpected Host or origin binding.",
+      "action": "Attempt privileged local-host interaction.",
+      "expected_outcome": "Configured host identity policy rejects unauthorized route/rebinding.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-123",
+      "group": "Session and browser policy",
+      "milestone": "U7",
+      "layer": "security_integration",
+      "spec_sections": "22, 24, 28",
+      "invariant_ids": [
+        "UI-INV-09",
+        "UI-INV-10",
+        "UI-INV-14",
+        "UI-INV-17",
+        "UI-INV-19"
+      ],
+      "title": "No token persistence",
+      "setup": "Authenticated session and approvals exist.",
+      "action": "Inspect storage, URL, exports and logs.",
+      "expected_outcome": "No reusable auth/provider/grant secrets are present.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-124",
+      "group": "Session and browser policy",
+      "milestone": "U7",
+      "layer": "security_integration",
+      "spec_sections": "22, 24, 28",
+      "invariant_ids": [
+        "UI-INV-09",
+        "UI-INV-10",
+        "UI-INV-14",
+        "UI-INV-17",
+        "UI-INV-19"
+      ],
+      "title": "CSP production build",
+      "setup": "Built app uses real canvas, math preview and isolated viewer.",
+      "action": "Run under documented CSP.",
+      "expected_outcome": "No unsafe-eval/script broadening is required; style exceptions are narrow and documented.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-125",
+      "group": "Session and browser policy",
+      "milestone": "U7",
+      "layer": "security_integration",
+      "spec_sections": "22, 24, 28",
+      "invariant_ids": [
+        "UI-INV-09",
+        "UI-INV-10",
+        "UI-INV-14",
+        "UI-INV-17",
+        "UI-INV-19"
+      ],
+      "title": "Imported host URL",
+      "setup": "Graph refers to an attacker-selected host.",
+      "action": "Import while authenticated to local host.",
+      "expected_outcome": "No automatic contact and no forwarding of existing credentials.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-126",
+      "group": "Session and browser policy",
+      "milestone": "U7",
+      "layer": "security_integration",
+      "spec_sections": "22, 24, 28",
+      "invariant_ids": [
+        "UI-INV-09",
+        "UI-INV-10",
+        "UI-INV-14",
+        "UI-INV-17",
+        "UI-INV-19"
+      ],
+      "title": "No telemetry by default",
+      "setup": "Full user journey is exercised with network recording.",
+      "action": "Inspect all requests.",
+      "expected_outcome": "Only explicitly selected host/assets are contacted; no analytics/session replay/CDN service appears.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-127",
+      "group": "Accessibility and localization",
+      "milestone": "U7",
+      "layer": "manual_browser",
+      "spec_sections": "25",
+      "invariant_ids": [
+        "UI-INV-04",
+        "UI-INV-07",
+        "UI-INV-08",
+        "UI-INV-12"
+      ],
+      "title": "Screen-reader journey",
+      "setup": "A documented screen reader is enabled.",
+      "action": "Discover, connect, repair, review and inspect a result.",
+      "expected_outcome": "Operation/port names, assumptions and candidate/evidence distinctions are understandable without geometry/color.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-128",
+      "group": "Accessibility and localization",
+      "milestone": "U7",
+      "layer": "manual_browser",
+      "spec_sections": "25",
+      "invariant_ids": [
+        "UI-INV-04",
+        "UI-INV-07",
+        "UI-INV-08",
+        "UI-INV-12"
+      ],
+      "title": "Non-drag pointer journey",
+      "setup": "Dragging is unavailable but clicking works.",
+      "action": "Author and reorganize a graph.",
+      "expected_outcome": "Every essential drag operation has a click-based equivalent; keyboard-only alternative alone is insufficient.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-129",
+      "group": "Accessibility and localization",
+      "milestone": "U7",
+      "layer": "manual_browser",
+      "spec_sections": "25",
+      "invariant_ids": [
+        "UI-INV-04",
+        "UI-INV-07",
+        "UI-INV-08",
+        "UI-INV-12"
+      ],
+      "title": "Focus obscuration",
+      "setup": "Sticky header/drawer and approval dialog are open.",
+      "action": "Navigate with keyboard and reveal diagnostic fields.",
+      "expected_outcome": "Focused controls stay visible, focus restores correctly, and warnings do not steal it.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-130",
+      "group": "Accessibility and localization",
+      "milestone": "U7",
+      "layer": "manual_browser",
+      "spec_sections": "25",
+      "invariant_ids": [
+        "UI-INV-04",
+        "UI-INV-07",
+        "UI-INV-08",
+        "UI-INV-12"
+      ],
+      "title": "Zoom and target size",
+      "setup": "UI is zoomed and high contrast/reduced motion is enabled.",
+      "action": "Use canvas controls and inspectors.",
+      "expected_outcome": "Controls remain accessible with adequate hit areas; animation is not required for meaning.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-131",
+      "group": "Accessibility and localization",
+      "milestone": "U7",
+      "layer": "manual_browser",
+      "spec_sections": "25",
+      "invariant_ids": [
+        "UI-INV-04",
+        "UI-INV-07",
+        "UI-INV-08",
+        "UI-INV-12"
+      ],
+      "title": "Localized input and labels",
+      "setup": "Dutch UI and long translated status labels are loaded.",
+      "action": "Enter numbers and review cost/evidence.",
+      "expected_outcome": "Canonical values remain stable; consequential labels/warnings are not hidden by truncation.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-132",
+      "group": "Accessibility and localization",
+      "milestone": "U7",
+      "layer": "manual_browser",
+      "spec_sections": "25",
+      "invariant_ids": [
+        "UI-INV-04",
+        "UI-INV-07",
+        "UI-INV-08",
+        "UI-INV-12"
+      ],
+      "title": "Clock skew",
+      "setup": "Browser clock is wrong and plan expiry is near.",
+      "action": "Review and confirm.",
+      "expected_outcome": "Countdown is qualified; host expiry decides validity, not browser time.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-133",
+      "group": "Performance and bounds",
+      "milestone": "U7",
+      "layer": "benchmark",
+      "spec_sections": "26",
+      "invariant_ids": [
+        "UI-INV-09",
+        "UI-INV-11",
+        "UI-INV-12",
+        "UI-INV-13",
+        "UI-INV-17"
+      ],
+      "title": "Catalog search budget",
+      "setup": "2,000-entry authorized fixture on reference laptop.",
+      "action": "Search repeatedly after load.",
+      "expected_outcome": "Record p95 against proposed 150-ms budget; report misses rather than claim measured compliance.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-134",
+      "group": "Performance and bounds",
+      "milestone": "U7",
+      "layer": "benchmark",
+      "spec_sections": "26",
+      "invariant_ids": [
+        "UI-INV-09",
+        "UI-INV-11",
+        "UI-INV-12",
+        "UI-INV-13",
+        "UI-INV-17"
+      ],
+      "title": "Medium graph interaction",
+      "setup": "200 nodes/400 edges with real node shells.",
+      "action": "Pan, drag and inspect.",
+      "expected_outcome": "Record frame and inspector latency with environment details; no hidden viewer simplification in report.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-135",
+      "group": "Performance and bounds",
+      "milestone": "U7",
+      "layer": "benchmark",
+      "spec_sections": "26",
+      "invariant_ids": [
+        "UI-INV-09",
+        "UI-INV-11",
+        "UI-INV-12",
+        "UI-INV-13",
+        "UI-INV-17"
+      ],
+      "title": "Large draft graceful view",
+      "setup": "1,000 nodes/2,000 edges.",
+      "action": "Open and navigate.",
+      "expected_outcome": "Outline becomes usable progressively; no nodes are dropped from saved content.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-136",
+      "group": "Performance and bounds",
+      "milestone": "U7",
+      "layer": "benchmark",
+      "spec_sections": "26",
+      "invariant_ids": [
+        "UI-INV-09",
+        "UI-INV-11",
+        "UI-INV-12",
+        "UI-INV-13",
+        "UI-INV-17"
+      ],
+      "title": "Event burst memory",
+      "setup": "Sustained progress/log burst for 10 minutes.",
+      "action": "Observe and pause log scrolling.",
+      "expected_outcome": "Memory is bounded; important state/cleanup transitions are retained; coalescing is explicit.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-137",
+      "group": "Performance and bounds",
+      "milestone": "U7",
+      "layer": "benchmark",
+      "spec_sections": "26",
+      "invariant_ids": [
+        "UI-INV-09",
+        "UI-INV-11",
+        "UI-INV-12",
+        "UI-INV-13",
+        "UI-INV-17"
+      ],
+      "title": "Viewer disposal trend",
+      "setup": "Repeatedly open/close audio and 3D artifacts.",
+      "action": "Measure memory/context count.",
+      "expected_outcome": "Resources return toward baseline; no unbounded listeners, buffers or object URLs.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-138",
+      "group": "Performance and bounds",
+      "milestone": "U7",
+      "layer": "benchmark",
+      "spec_sections": "26",
+      "invariant_ids": [
+        "UI-INV-09",
+        "UI-INV-11",
+        "UI-INV-12",
+        "UI-INV-13",
+        "UI-INV-17"
+      ],
+      "title": "Cancelled parse/layout",
+      "setup": "Large valid editor import or layout runs in worker.",
+      "action": "Cancel while observing a run.",
+      "expected_outcome": "UI remains responsive; previous document/layout survives; no mathematical command is cancelled or retried.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-139",
+      "group": "Packaging and real integration",
+      "milestone": "U7",
+      "layer": "integration_release",
+      "spec_sections": "27, 28, 29",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-02",
+        "UI-INV-03",
+        "UI-INV-12",
+        "UI-INV-14",
+        "UI-INV-20"
+      ],
+      "title": "Clean offline installation",
+      "setup": "Release artifact on machine without npm/Node runtime.",
+      "action": "Install optional UI and open it offline with local host.",
+      "expected_outcome": "Required bundled assets work; base install remains independent.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-140",
+      "group": "Packaging and real integration",
+      "milestone": "U7",
+      "layer": "integration_release",
+      "spec_sections": "27, 28, 29",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-02",
+        "UI-INV-03",
+        "UI-INV-12",
+        "UI-INV-14",
+        "UI-INV-20"
+      ],
+      "title": "Nested route and base path",
+      "setup": "App is served under a nonroot configured path.",
+      "action": "Reload document/run/artifact deep links.",
+      "expected_outcome": "Correct app and scoped entity load; route reload does not invoke a command.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-141",
+      "group": "Packaging and real integration",
+      "milestone": "U7",
+      "layer": "integration_release",
+      "spec_sections": "27, 28, 29",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-02",
+        "UI-INV-03",
+        "UI-INV-12",
+        "UI-INV-14",
+        "UI-INV-20"
+      ],
+      "title": "Mixed asset versions",
+      "setup": "Cached old index points to removed build assets.",
+      "action": "Reload after upgrade.",
+      "expected_outcome": "Clear recovery/version screen; no incompatible silent mutation.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-142",
+      "group": "Packaging and real integration",
+      "milestone": "U7",
+      "layer": "integration_release",
+      "spec_sections": "27, 28, 29",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-02",
+        "UI-INV-03",
+        "UI-INV-12",
+        "UI-INV-14",
+        "UI-INV-20"
+      ],
+      "title": "Real local end-to-end",
+      "setup": "An actual MathKernel host supplies an advertised standalone operation/result.",
+      "action": "Run explicit input and inspect result/evidence.",
+      "expected_outcome": "Record real result parity and actual tests; fixture-only proof is insufficient.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-143",
+      "group": "Packaging and real integration",
+      "milestone": "U7",
+      "layer": "integration_release",
+      "spec_sections": "27, 28, 29",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-02",
+        "UI-INV-03",
+        "UI-INV-12",
+        "UI-INV-14",
+        "UI-INV-20"
+      ],
+      "title": "Real workflow gate",
+      "setup": "A separately supplied real workflow-capable host is available.",
+      "action": "Submit frozen graph, close browser, reconnect, inspect result.",
+      "expected_outcome": "Host owns execution/recovery; mapping/evidence match revision; otherwise feature stays blocked.",
+      "status": "planned_not_executed"
+    },
+    {
+      "test_id": "UI-AT-144",
+      "group": "Packaging and real integration",
+      "milestone": "U7",
+      "layer": "integration_release",
+      "spec_sections": "27, 28, 29",
+      "invariant_ids": [
+        "UI-INV-01",
+        "UI-INV-02",
+        "UI-INV-03",
+        "UI-INV-12",
+        "UI-INV-14",
+        "UI-INV-20"
+      ],
+      "title": "Support matrix evidence",
+      "setup": "Browser/accessibility/integration checks have mixed actual outcomes.",
+      "action": "Prepare release documentation.",
+      "expected_outcome": "Exact tested versions and pass/fail/skip/blocked status are reported; untested browsers/providers are not claimed supported.",
+      "status": "planned_not_executed"
+    }
+  ]
+}
