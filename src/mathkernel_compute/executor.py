@@ -69,6 +69,8 @@ class LocalExecutor:
                 raise ValueError('OWNER_IDENTITY_CONFLICT')
             if process_identity(owner['pid']) == owner['starttime']:
                 return {'execution': 'RUNNING', 'resources': 'ACTIVE', 'revision': 1}
+            if terminal.exists():
+                return decode(bounded_read(terminal))  # Supervisor may have exited during the first observation.
             return {'execution': 'LOST', 'resources': 'CLEANUP_UNKNOWN', 'revision': 2,
                     'message': 'Supervisor unavailable; retained process identity requires reconciliation.'}
         return {'execution': 'SUBMISSION_UNKNOWN', 'resources': 'ALLOCATION_INTENT', 'revision': 0}

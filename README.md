@@ -6,7 +6,7 @@
 
 Mathematical results carry an explicit **trust level**, an **engine** tag, and a **derivation trail**. Exact computation, checked certificates, symbolic results, certified enclosures, empirical evidence, and formal proofs are distinct claims. Exact arithmetic alone is not a formal proof; approximate-input ancestry must not silently disappear.
 
-[![version](https://img.shields.io/badge/version-1.4.0.dev1-blue)]()
+[![version](https://img.shields.io/badge/version-1.4.0.dev2-blue)]()
 [![python](https://img.shields.io/badge/python-%3E%3D3.11-blue)]()
 [![engines](https://img.shields.io/badge/engines-sympy%20%C2%B7%20z3%20%C2%B7%20lean%20%C2%B7%20numba%20%C2%B7%20cuda-orange)]()
 [![license](https://img.shields.io/badge/license-MIT-lightgrey)]()
@@ -909,8 +909,9 @@ objects and exported as a single self-contained file.
 
 `mathkernel_compute` provides an optional, durable compute service outside the
 mathematical facade. Install this development branch with `pip install '.[compute]'`
-and use `mathkernel-compute` or `ComputeClient`. The current pilot supports Linux
-local CPU execution for bounded Pythagorean-pair sweeps and numerical convolution.
+and use `mathkernel-compute` or `ComputeClient`. The current pilot supports local
+CPU, existing Linux SSH hosts and native single-job Slurm execution for bounded
+Pythagorean-pair sweeps and numerical convolution.
 
 Plans freeze inputs, runtime identity and policy. A trusted local host authorizes
 one attempt; submission and cleanup intent are journaled before process effects.
@@ -920,8 +921,9 @@ before constructing evidence-bearing results. Provider success and worker labels
 cannot grant mathematical trust.
 
 Execution, verification, output retention and resource cleanup are separate facts.
-SSH/cloud/GPU adapters and metered provisioning are future additions; this pilot
-makes no remote-provider compatibility claim. Existing Python/MCP jobs and Studio
+SSH/Slurm require pinned operator profiles and explicit approval to export the
+exact bundle. External host/cluster qualification, Apptainer, cloud/GPU adapters
+and metered provisioning remain outstanding. Existing Python/MCP jobs and Studio
 workflows retain their behavior. See the [compute guide](src/mathkernel_compute/README.md)
 for supported contracts, explicit CLI actions, recovery and operational limits.
 

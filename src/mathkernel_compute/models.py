@@ -2,7 +2,7 @@
 from __future__ import annotations
 from decimal import Decimal
 from typing import Annotated, Literal
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator, model_serializer
 from .protocol import digest
 
 Identifier = Annotated[str, Field(pattern=r'^[A-Za-z0-9_-]{1,128}$')]
@@ -61,7 +61,7 @@ class ComputeRequest(Contract):
     operation: Literal['cuboid_sweep', 'signal_convolve']
     parameters: CuboidParameters | ConvolutionParameters
     operation_version: Literal['1'] = '1'
-    target: Literal['auto', 'local-cpu'] = 'local-cpu'
+    target: Identifier = 'local-cpu'
     verification: Literal['local_required', 'inspect_only'] = 'local_required'
     required_claim: Literal['complete_search', 'witnesses', 'numeric_convolution'] = 'complete_search'
     resources: ResourceRequirements = Field(default_factory=ResourceRequirements)
@@ -79,16 +79,16 @@ class ComputeRequest(Contract):
 class TargetCapabilities(Contract):
     process_deadline: Literal['supported', 'unsupported']
     process_tree_cleanup: Literal['supported', 'unsupported']
-    output_retention: Literal['controller-spool'] = 'controller-spool'
+    output_retention: Literal['controller-spool', 'remote-spool'] = 'controller-spool'
     network_isolation: Literal['unsupported'] = 'unsupported'
     hard_memory_limit: Literal['unsupported'] = 'unsupported'
     hard_cost_cap: Literal['unsupported'] = 'unsupported'
-    source: Literal['local-runtime'] = 'local-runtime'
+    source: Literal['local-runtime', 'operator-profile'] = 'local-runtime'
 
 
 class ComputeTarget(Contract):
-    target_id: Literal['local-cpu'] = 'local-cpu'
-    adapter: Literal['local'] = 'local'
+    target_id: Identifier = 'local-cpu'
+    adapter: Literal['local', 'ssh', 'slurm'] = 'local'
     ownership: Literal['existing'] = 'existing'
     available: bool
     capabilities: TargetCapabilities
@@ -99,7 +99,7 @@ class InputBundle(Contract):
     bundle_schema: Literal['mk.bundle/1'] = 'mk.bundle/1'
     request: ComputeRequest
     context: Literal['self-contained; no kernel object references or inherited assumptions'] = 'self-contained; no kernel object references or inherited assumptions'
-    classification: Literal['local_only'] = 'local_only'
+    classification: Literal['local_only', 'explicit_export'] = 'local_only'
 
 
 class RuntimeProfile(Contract):
@@ -111,13 +111,48 @@ class RuntimeProfile(Contract):
     dependencies: tuple[str, ...]
 
 
+class SlurmAllocation(Contract):
+    partition: Identifier
+    allocation_account: Identifier
+    qos: Identifier | None = None
+    constraint: Identifier | None = None
+    memory_mib: int = Field(ge=256, le=65536)
+    walltime_seconds: int = Field(ge=120, le=900)
+    cpus: Literal[1] = 1
+    allocation_units: Literal['UNKNOWN'] = 'UNKNOWN'
+
+    @field_validator('cpus', mode='before')
+    @classmethod
+    def strict_cpu_count(cls, value):
+        if type(value) is not int:
+            raise ValueError('CPU count requires a strict integer')
+        return value
+
+
+class RemoteBinding(Contract):
+    target_profile_digest: Digest
+    verifier_runtime: RuntimeProfile
+    adapter: Literal['ssh', 'slurm']
+    destination: str = Field(min_length=1, max_length=260)
+    ssh_account: Identifier
+    allocation: SlurmAllocation | None = None
+
+
 class ExecutionSpec(Contract):
     protocol_version: Literal['1.0'] = '1.0'
     bundle: InputBundle
     bundle_digest: Digest
-    target: Literal['local-cpu'] = 'local-cpu'
+    target: Identifier = 'local-cpu'
     runtime: RuntimeProfile
     policy_digest: Digest
+    remote: RemoteBinding | None = None
+
+    @model_serializer(mode='wrap')
+    def compatible_bytes(self, handler):
+        data = handler(self)
+        if self.remote is None:
+            data.pop('remote', None)  # Preserve canonical identities of existing 1.0 local records.
+        return data
 
 
 class Money(Contract):
@@ -132,7 +167,7 @@ class ComputePlan(Contract):
     expires_ms: int
     spec: ExecutionSpec
     execution_digest: Digest
-    provider_cost: Money = Field(default_factory=Money)
+    provider_cost: Money | None = Field(default_factory=Money)
     warnings: tuple[str, ...]
     rejected_targets: tuple[str, ...] = ('Remote/GPU adapters are not installed or authorized in this tier.',)
     authorization_required: Literal[True] = True
@@ -151,7 +186,7 @@ class AuthorizationGrant(Contract):
     expires_ms: int
     max_attempts: Literal[1] = 1
     max_amount: Money = Field(default_factory=Money)
-    export_allowed: Literal[False] = False
+    export_allowed: bool = False
     provisioning_allowed: Literal[False] = False
     retries_allowed: Literal[False] = False
 
@@ -162,6 +197,14 @@ class AttemptRecord(Contract):
     bundle_digest: Digest
     workspace_id: Identifier
     spec: ExecutionSpec
+    start_deadline_ms: int | None = Field(default=None, ge=0)
+
+    @model_serializer(mode='wrap')
+    def compatible_bytes(self, handler):
+        data = handler(self)
+        if self.start_deadline_ms is None:
+            data.pop('start_deadline_ms', None)
+        return data
 
 
 class ResourceLease(Contract):
@@ -207,9 +250,10 @@ class ComputeResultReceipt(Contract):
     verification: str
     artifacts: str
     resources: str
-    cost: Literal['NO_METERED_ALLOCATION'] = 'NO_METERED_ALLOCATION'
+    cost: Literal['NO_METERED_ALLOCATION', 'ALLOCATION_USAGE_UNKNOWN', 'EXISTING_HOST_COST_UNMEASURED'] = 'NO_METERED_ALLOCATION'
     candidate_ref: Digest | None = None
     accepted_result_ref: Digest | None = None
+    transport: Literal['AVAILABLE', 'UNAVAILABLE'] = 'AVAILABLE'
 
 
 class JobHandle(Contract):
@@ -235,12 +279,13 @@ class JobRecord(Contract):
     fingerprint: Digest
     revision: int = Field(ge=0)
     observation_revision: int = Field(ge=-1)
-    execution: Literal['PREPARED', 'SUBMITTING', 'SUBMISSION_UNKNOWN', 'RUNNING', 'RECEIVED', 'FAILED', 'TIMED_OUT', 'CANCELLED', 'LOST']
+    execution: Literal['PREPARED', 'SUBMITTING', 'SUBMISSION_UNKNOWN', 'QUEUED', 'RUNNING', 'RECEIVED', 'FAILED', 'TIMED_OUT', 'CANCELLED', 'LOST', 'OUT_OF_MEMORY', 'PREEMPTED', 'NODE_FAILED', 'EXPIRED']
     verification: Literal['NOT_REQUESTED', 'PENDING', 'RUNNING', 'PASSED', 'FAILED', 'INCONCLUSIVE', 'UNSUPPORTED']
     artifacts: Literal['NONE', 'UNAVAILABLE', 'REJECTED', 'QUARANTINED']
     resources: Literal['ALLOCATION_INTENT', 'ACTIVE', 'NOT_OWNED', 'RELEASE_CONFIRMED', 'CLEANUP_UNKNOWN']
     candidate_ref: Digest | None = None
     accepted_result_ref: Digest | None = None
+    transport: Literal['AVAILABLE', 'UNAVAILABLE'] = 'AVAILABLE'
     cancel_requested: bool
     message: str = Field(max_length=2000)
 

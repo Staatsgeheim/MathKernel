@@ -14,12 +14,13 @@ from .files import ArtifactStore
 from .journal import ComputeJournal
 from .models import (AttemptRecord, AuthorizationGrant, ComputePlan, ComputeRequest, ComputeResultReceipt,
     ComputeTarget, ExecutionSpec, InputBundle, JobHandle, LocalPolicy, ResourceLease, RemoteResultEnvelope,
-    TargetCapabilities, VerificationReport, JobRecord)
+    TargetCapabilities, VerificationReport, JobRecord, RemoteBinding, Money)
 from .protocol import canonical, digest, parse, read_frame, write_frame
 from .registry import runtime_profile
 from .verification import admit, check_binding
+from .remote import SSHProfile, SSHExecutor, RemoteUnavailable
 
-TERMINAL = {'RECEIVED', 'FAILED', 'TIMED_OUT', 'CANCELLED', 'LOST'}
+TERMINAL = {'RECEIVED', 'FAILED', 'TIMED_OUT', 'CANCELLED', 'LOST', 'OUT_OF_MEMORY', 'PREEMPTED', 'NODE_FAILED', 'EXPIRED'}
 
 
 def now_ms():
@@ -39,10 +40,14 @@ def serialized(method):
 
 
 class ComputeClient:
-    def __init__(self, *, state_dir, kernel=None, policy=None, _executor=None):
+    def __init__(self, *, state_dir, kernel=None, policy=None, remote_targets=(), reconcile_on_open=True, _executor=None):
         self._coordinator_lock = threading.RLock()
         self.kernel = kernel  # No remote method is added to the facade.
         self.policy = policy or LocalPolicy()
+        profiles = [parse(SSHProfile, canonical(p)) for p in remote_targets]
+        self.remote_targets = {p.target_id: p for p in profiles}
+        if len(self.remote_targets) != len(profiles):
+            raise ValueError('DUPLICATE_TARGET_ALIAS')
         self.journal = ComputeJournal(state_dir)
         self.root = self.journal.root
         self.store = ArtifactStore(self.root / 'quarantine')
@@ -60,7 +65,8 @@ class ComputeClient:
                     if job['verification'] == 'RUNNING':
                         job['verification'] = 'INCONCLUSIVE'
                         self._save(job, 'verifier_controller_restarted')
-            self.reconcile()
+            if reconcile_on_open:
+                self.reconcile()
         except BaseException:
             self.close()
             raise
@@ -68,30 +74,67 @@ class ComputeClient:
     def targets(self):
         available = sys.platform == 'linux' and Path('/proc/self/stat').exists()
         flag = 'supported' if available else 'unsupported'
-        return (ComputeTarget(available=available,
+        local = ComputeTarget(available=available,
             capabilities=TargetCapabilities(process_deadline=flag, process_tree_cleanup=flag),
-            reason='Linux native supervised worker' if available else 'This milestone qualifies Linux only'),)
+            reason='Linux native supervised worker' if available else 'Local execution requires Linux')
+        remote = tuple(ComputeTarget(target_id=p.target_id, adapter=p.adapter, available=True,
+            capabilities=TargetCapabilities(process_deadline='supported', process_tree_cleanup='supported',
+                output_retention='remote-spool', source='operator-profile'),
+            reason='Operator-configured target; live identity and availability require an explicit probe')
+            for p in self.remote_targets.values())
+        return (local, *remote)
 
     def target_probe(self, target='local-cpu'):
-        if target != 'local-cpu':
-            raise ValueError('TARGET_NOT_CONFIGURED')
-        return self.targets()[0]
+        if target == 'local-cpu':
+            return self.targets()[0]
+        try:
+            return SSHExecutor(self.remote_targets[target]).probe()
+        except KeyError:
+            raise ValueError('TARGET_NOT_CONFIGURED') from None
+
+    def _executor_for(self, attempt):
+        if attempt.spec.remote is None:
+            return self.executor
+        profile = self.remote_targets.get(attempt.spec.target)
+        try:
+            if profile is None or profile.profile_digest != attempt.spec.remote.target_profile_digest:
+                raise RemoteUnavailable('PINNED_TARGET_UNAVAILABLE_OR_CHANGED')
+        except OSError as exc:
+            raise RemoteUnavailable('PINNED_TARGET_UNAVAILABLE_OR_CHANGED') from exc
+        return SSHExecutor(profile)
 
     @serialized
     def plan(self, request: ComputeRequest):
         request = parse(ComputeRequest, canonical(request))
-        if not self.targets()[0].available:
+        target = 'local-cpu' if request.target == 'auto' else request.target
+        remote = target != 'local-cpu'
+        if remote and target not in self.remote_targets:
+            raise ValueError('TARGET_NOT_CONFIGURED')
+        if not remote and not self.targets()[0].available:
             raise ValueError('TARGET_UNSUPPORTED')
-        bundle = InputBundle(request=request)
-        spec = ExecutionSpec(bundle=bundle, bundle_digest=digest(bundle), runtime=runtime_profile(),
-                             policy_digest=digest(self.policy))
+        local_runtime = runtime_profile()
+        profile = self.remote_targets[target] if remote else None
+        bundle = InputBundle(request=request, classification='explicit_export' if remote else 'local_only')
+        spec = ExecutionSpec(bundle=bundle, bundle_digest=digest(bundle), target=target,
+            runtime=profile.runtime if profile else local_runtime, policy_digest=digest(self.policy),
+            remote=RemoteBinding(target_profile_digest=profile.profile_digest, verifier_runtime=local_runtime,
+                                 adapter=profile.adapter, destination=f'{profile.host}:{profile.port}',
+                                 ssh_account=profile.account, allocation=profile.allocation) if profile else None)
+        warnings = ('Native worker has no hard memory or network isolation.',
+                    'One attempt; no automatic retry, fallback or provisioning.',
+                    'Local verification consumes additional CPU; numeric verification is quadratic in input length.',
+                    'Supervisor survives disconnect; unreachable ownership retains cleanup uncertainty.')
+        if remote:
+            warnings += ('Approval exports the exact self-contained bundle to this pinned target.',
+                         'Remote spool retains input and output; removal is an operator retention action.',
+                         'Queue/start authority expires with this plan; runtime has its own bounded deadline.')
+        warnings += (('Institutional allocation usage/pricing is unknown; zero provider estimate is not a quota guarantee.'
+                      if profile and profile.adapter == 'slurm' else
+                      'Existing unmetered host only; electricity and hardware costs are not measured.'),)
         plan = ComputePlan(plan_id=identifier('plan'), workspace_id=self.workspace_id, created_ms=now_ms(),
             expires_ms=now_ms() + self.policy.plan_lifetime_ms, spec=spec, execution_digest=digest(spec),
-            warnings=('Native worker has no hard memory or network isolation.',
-                      'No provider charge; local electricity and hardware costs are not measured.',
-                      'One attempt; no automatic retry, fallback, export or provisioning.',
-                      'Local verification consumes additional CPU; numeric verification is quadratic in input length.',
-                      'Supervisor survives controller disconnect; lost supervisor ownership retains cleanup uncertainty.'))
+            provider_cost=None if remote else Money(),
+            warnings=warnings, rejected_targets=('Managed/GPU providers, Apptainer and automatic selection of remote targets are not enabled.',))
         with self.journal.transaction():
             if len(self.journal.all('plans')) >= self.policy.max_retained_jobs * 4:
                 raise ValueError('JOURNAL_CAPACITY')
@@ -111,16 +154,36 @@ class ComputeClient:
             raise PermissionError('POLICY_DENIED')
         if now_ms() >= plan.expires_ms:
             raise PermissionError('PLAN_EXPIRED')
-        if plan.spec.policy_digest != digest(self.policy) or plan.spec.runtime != runtime_profile():
+        verifier_runtime = plan.spec.remote.verifier_runtime if plan.spec.remote else plan.spec.runtime
+        if plan.spec.policy_digest != digest(self.policy) or verifier_runtime != runtime_profile():
             raise PermissionError('PLAN_CHANGED')
+        if plan.spec.remote:
+            profile = self.remote_targets.get(plan.spec.target)
+            if profile is None or profile.profile_digest != plan.spec.remote.target_profile_digest:
+                raise PermissionError('TARGET_PROFILE_CHANGED')
 
     @serialized
     def _authorize_local(self, plan_id, *, subject='local-user'):
         """Trusted host entrypoint; deliberately absent from agent-facing CLI/API commands."""
         plan = self._plan(plan_id)
         self._check_plan(plan)
+        if plan.spec.remote is not None:
+            raise PermissionError('EXPLICIT_EXPORT_APPROVAL_REQUIRED')
+        return self._issue_grant(plan, subject=subject, export_allowed=False)
+
+    @serialized
+    def _authorize_remote(self, plan_id, *, plan_digest, bundle_digest, target_profile_digest, subject='local-user'):
+        """Trusted host approval of exact export/target scope; not a worker or model capability."""
+        plan = self._plan(plan_id)
+        self._check_plan(plan)
+        if (plan.spec.remote is None or plan.digest != plan_digest or plan.spec.bundle_digest != bundle_digest
+                or plan.spec.remote.target_profile_digest != target_profile_digest):
+            raise PermissionError('EXPORT_APPROVAL_SCOPE_MISMATCH')
+        return self._issue_grant(plan, subject=subject, export_allowed=True)
+
+    def _issue_grant(self, plan, *, subject, export_allowed):
         grant = AuthorizationGrant(grant_id=identifier('grant'), subject=subject,
-            workspace_id=self.workspace_id, plan_digest=plan.digest, expires_ms=plan.expires_ms)
+            workspace_id=self.workspace_id, plan_digest=plan.digest, expires_ms=plan.expires_ms, export_allowed=export_allowed)
         with self.journal.transaction():
             if len(self.journal.all('budget_grants')) >= self.policy.max_retained_jobs * 4:
                 raise ValueError('JOURNAL_CAPACITY')
@@ -144,7 +207,7 @@ class ComputeClient:
             record = self.journal.get('budget_grants', authorization_ref)
             grant = parse(AuthorizationGrant, canonical(record['grant']))
             if (record['job_id'] or grant.plan_digest != plan.digest or grant.workspace_id != self.workspace_id
-                    or now_ms() >= grant.expires_ms):
+                    or now_ms() >= grant.expires_ms or grant.export_allowed != (plan.spec.remote is not None)):
                 raise PermissionError('AUTHORIZATION_INVALID')
             if len(jobs) >= self.policy.max_retained_jobs:
                 raise ValueError('JOURNAL_CAPACITY')
@@ -154,7 +217,8 @@ class ComputeClient:
                 raise PermissionError('CONCURRENCY_LIMIT')
             job_id, attempt_id = identifier('job'), identifier('attempt')
             attempt = AttemptRecord(attempt_id=attempt_id, execution_digest=plan.execution_digest,
-                bundle_digest=plan.spec.bundle_digest, workspace_id=self.workspace_id, spec=plan.spec)
+                bundle_digest=plan.spec.bundle_digest, workspace_id=self.workspace_id, spec=plan.spec,
+                start_deadline_ms=grant.expires_ms if plan.spec.remote else None)
             job = dict(job_id=job_id, attempt_id=attempt_id, client_request_id=client_request_id,
                 workspace_id=self.workspace_id, plan_id=plan_id, authorization_ref=authorization_ref,
                 fingerprint=fingerprint, revision=0, observation_revision=-1, execution='PREPARED',
@@ -163,15 +227,25 @@ class ComputeClient:
                 cancel_requested=False, message='Submit intent committed before any process launch.')
             record['job_id'] = job_id
             self.journal.put('budget_grants', authorization_ref, record)
-            self.journal.put('budget_reservations', job_id, {'amount': '0.00', 'currency': 'EUR', 'state': 'RESERVED'})
+            self.journal.put('budget_reservations', job_id, self._reservation(plan.spec, 'RESERVED'))
             self.journal.put('attempts', attempt_id, {'job_id': job_id, 'attempt_number': 1, 'attempt': attempt.model_dump(mode='json')})
             self.journal.put('resource_leases', attempt_id, ResourceLease(lease_id=identifier('lease'),
-                attempt_id=attempt_id, generation=attempt_id, expiry_ms=now_ms()+plan.spec.bundle.request.resources.execution_timeout_ms,
+                attempt_id=attempt_id, generation=attempt_id, expiry_ms=(grant.expires_ms if plan.spec.remote else now_ms()) +
+                    (plan.spec.remote.allocation.walltime_seconds * 1000 if plan.spec.remote and plan.spec.remote.allocation else plan.spec.bundle.request.resources.execution_timeout_ms),
                 cleanup='ALLOCATION_INTENT'))
             self.journal.put('outbox', attempt_id, {'job_id': job_id, 'state': 'PENDING', 'kind': 'submit'})
             self._save(job, 'submit_intent')
         self.reconcile(job_id)
         return self._handle(job)
+
+    @staticmethod
+    def _reservation(spec, state):
+        if spec.remote:
+            allocation = spec.remote.allocation
+            return {'state': state, 'direct_currency': 'UNKNOWN', 'allocation_units': 'UNKNOWN',
+                    'maximum_cpu_seconds': allocation.walltime_seconds if allocation else (spec.bundle.request.resources.execution_timeout_ms + 999) // 1000,
+                    'memory_mib': allocation.memory_mib if allocation else None}
+        return {'amount': '0.00', 'currency': 'EUR', 'state': state}
 
     @staticmethod
     def _handle(job):
@@ -228,13 +302,27 @@ class ComputeClient:
                     self.journal.put('outbox', attempt.attempt_id, outbox)
                     self._save(job, 'dispatch_intent')
                 try:
-                    self.executor.submit(attempt)
+                    self._executor_for(attempt).submit(attempt)
                 except Exception:
                     with self.journal.transaction():
                         job.update(execution='SUBMISSION_UNKNOWN', message='Submission acknowledgement unavailable; reconcile without replacement.')
                         self._save(job, 'submission_unknown')
                     continue
-            observation = self.executor.observe(attempt)
+            try:
+                observation = self._executor_for(attempt).observe(attempt)
+            except (RemoteUnavailable, FileNotFoundError):
+                if attempt.spec.remote is None:
+                    raise
+                self._unreachable(job)
+                continue
+            if job.get('transport') == 'UNAVAILABLE':
+                with self.journal.transaction():
+                    job['transport'] = 'AVAILABLE'
+                    self._save(job, 'transport_restored')
+            if not isinstance(observation, dict) or type(observation.get('revision')) is not int or observation['revision'] < 0:
+                raise ValueError('OBSERVATION_SCHEMA_INVALID')
+            if attempt.spec.remote and not {'attempt_id', 'execution_digest'} <= set(observation):
+                raise ValueError('OBSERVATION_BINDING_MISSING')
             if 'attempt_id' in observation and (observation['attempt_id'] != attempt.attempt_id
                     or observation['execution_digest'] != attempt.execution_digest):
                 raise ValueError('OBSERVATION_BINDING_MISMATCH')
@@ -251,22 +339,39 @@ class ComputeClient:
                     lease['cleanup'] = job['resources']
                     self.journal.put('resource_leases', attempt.attempt_id, lease)
                     if job['resources'] == 'RELEASE_CONFIRMED':
-                        self.journal.put('budget_reservations', job['job_id'], {'amount': '0.00', 'currency': 'EUR', 'state': 'CLOSED'})
-                        self.journal.put('usage_entries', job['job_id'], {'provider_amount': '0.00', 'currency': 'EUR', 'local_energy': 'UNKNOWN'})
+                        self.journal.put('budget_reservations', job['job_id'], self._reservation(attempt.spec, 'CLOSED'))
+                        self.journal.put('usage_entries', job['job_id'], observation.get('usage', {'existing_host_cost': 'UNKNOWN', 'allocation_units': 'UNKNOWN'} if attempt.spec.remote else {'provider_amount': '0.00', 'currency': 'EUR', 'local_energy': 'UNKNOWN'}))
                     if job['execution'] in TERMINAL:
                         outbox['state'] = 'OBSERVED'
                         self.journal.put('outbox', attempt.attempt_id, outbox)
                     self._save(job, 'observation')
             if job['cancel_requested'] and job['execution'] not in TERMINAL:
-                self.executor.cancel(attempt)
+                try:
+                    self._executor_for(attempt).cancel(attempt)
+                except RemoteUnavailable:
+                    self._unreachable(job)
             if job['execution'] == 'RECEIVED' and not job['candidate_ref']:
                 self.fetch(job['job_id'])
         return self.status(job_id) if job_id else self.list()
 
+    def _unreachable(self, job):
+        if job.get('transport') != 'UNAVAILABLE':
+            with self.journal.transaction():
+                job['transport'] = 'UNAVAILABLE'
+                job['message'] = 'Remote observation unavailable; last execution facts retained and cleanup unresolved.'
+                self._save(job, 'remote_unavailable')
+
     def status(self, job_id):
         j = self._job(job_id)
-        return ComputeResultReceipt(**{k: j[k] for k in ('job_id', 'execution', 'verification', 'artifacts',
-            'resources', 'candidate_ref', 'accepted_result_ref')})
+        values = {k: j[k] for k in ('job_id', 'execution', 'verification', 'artifacts',
+                                  'resources', 'candidate_ref', 'accepted_result_ref')}
+        attempt = self._attempt(j)
+        if attempt.spec.remote:
+            values['cost'] = 'ALLOCATION_USAGE_UNKNOWN' if attempt.spec.remote.adapter == 'slurm' else 'EXISTING_HOST_COST_UNMEASURED'
+        if j.get('transport') == 'UNAVAILABLE' and j['resources'] not in {'RELEASE_CONFIRMED', 'NOT_OWNED'}:
+            values['resources'] = 'CLEANUP_UNKNOWN'
+        values['transport'] = j.get('transport', 'AVAILABLE')
+        return ComputeResultReceipt(**values)
 
     def list(self, *, limit=25, offset=0):
         if type(limit) is not int or type(offset) is not int or not 1 <= limit <= 100 or offset < 0:
@@ -282,7 +387,10 @@ class ComputeClient:
             job['cancel_requested'] = True
             job['message'] = 'Cancellation intent retained; stopping/cleanup not yet confirmed.'
             self._save(job, 'cancel_intent')
-        self.executor.cancel(self._attempt(job))
+        try:
+            self._executor_for(self._attempt(job)).cancel(self._attempt(job))
+        except RemoteUnavailable:
+            self._unreachable(job)
         return self.status(job_id)
 
     @serialized
@@ -290,7 +398,10 @@ class ComputeClient:
         job = self._job(job_id)
         attempt = self._attempt(job)
         try:
-            raw = self.executor.fetch(attempt)
+            raw = self._executor_for(attempt).fetch(attempt)
+        except RemoteUnavailable:
+            self._unreachable(job)
+            return self.status(job_id)
         except FileNotFoundError:
             with self.journal.transaction():
                 job['artifacts'] = 'UNAVAILABLE'
@@ -329,7 +440,7 @@ class ComputeClient:
         if job['accepted_result_ref']:
             return self.status(job_id)
         attempt, candidate = self._attempt(job), self.candidate(job_id)
-        if attempt.spec.runtime != runtime_profile():
+        if (attempt.spec.remote.verifier_runtime if attempt.spec.remote else attempt.spec.runtime) != runtime_profile():
             raise PermissionError('VERIFIER_RUNTIME_CHANGED: retained candidate requires explicit requalification')
         if job['cancel_requested']:
             raise PermissionError('Late output retained for inspection; cancelled jobs are not automatically admitted')
@@ -349,8 +460,11 @@ class ComputeClient:
             report = parse(VerificationReport, read_frame(io.BytesIO(output), 65536), 65536)
         except (ValueError, subprocess.TimeoutExpired) as exc:
             if process.poll() is None:
-                from .worker import terminate_owned
-                terminate_owned(process)
+                if sys.platform == 'linux':
+                    from .worker import terminate_owned
+                    terminate_owned(process)
+                else:
+                    process.kill(); process.wait()
             process.communicate()
             report = VerificationReport(report_id=report_id, verifier='local-verification-supervisor',
                 candidate_digest=digest(candidate), bundle_digest=attempt.bundle_digest,
@@ -391,7 +505,7 @@ class ComputeClient:
                 return status
             if time.monotonic() >= deadline:
                 return status
-            time.sleep(.05)
+            time.sleep(.5 if self._attempt(self._job(job_id)).spec.remote else .05)
 
     def export_replay(self, job_id):
         job = self._job(job_id)

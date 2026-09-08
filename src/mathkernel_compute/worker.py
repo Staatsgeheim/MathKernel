@@ -53,6 +53,8 @@ def run():
         raise ValueError('RUNTIME_CHANGED')
     ceiling = attempt.spec.bundle.request.resources.max_output_bytes + 4
     resource.setrlimit(resource.RLIMIT_FSIZE, (ceiling, ceiling))
+    if attempt.start_deadline_ms is not None and time.time_ns() // 1_000_000 >= attempt.start_deadline_ms:
+        raise SystemExit(42)
     output = execute(attempt.spec.bundle.request)
     envelope = RemoteResultEnvelope(attempt_id=attempt.attempt_id, workspace_id=attempt.workspace_id,
         execution_digest=attempt.execution_digest, bundle_digest=attempt.bundle_digest,
@@ -62,14 +64,23 @@ def run():
     write_frame(sys.stdout.buffer, envelope, ceiling-4)
 
 
-def supervise(directory):
+def supervise(directory, *, slurm=False):
     directory = Path(directory).resolve()
     attempt = parse(AttemptRecord, bounded_read(directory / 'request.json'))
+    if slurm:
+        job_id = os.environ.get('MK_SLURM_JOB_ID', '')
+        if not job_id.isdecimal() or os.environ.get('MK_SLURM_RESTART_COUNT', '0') != '0':
+            raise ValueError('SLURM_INCARNATION_INVALID')
+        ack = directory / 'slurm-ack.json'
+        if ack.exists() and decode(bounded_read(ack))['job_id'] != job_id:
+            raise ValueError('SLURM_JOB_ID_MISMATCH')
     try:
         fd = os.open(directory / 'accepted', os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     except FileExistsError:
         return  # At most one supervisor can own this attempt.
     os.close(fd)
+    if slurm:
+        atomic_write(directory / 'batch-incarnation.json', canonical({'job_id': job_id, 'attempt_id': attempt.attempt_id}))
     atomic_write(directory / 'owner.json', canonical({'attempt_id': attempt.attempt_id,
         'execution_digest': attempt.execution_digest, 'pid': os.getpid(), 'starttime': process_identity(os.getpid())}))
     process = None
@@ -77,7 +88,9 @@ def supervise(directory):
     resources = 'RELEASE_CONFIRMED'
     try:
         enable_subreaper()
-        if (directory / 'cancel').exists():
+        if attempt.start_deadline_ms is not None and time.time_ns() // 1_000_000 >= attempt.start_deadline_ms:
+            outcome, message = 'EXPIRED', 'Start authorization expired; no mathematical execution.'
+        elif (directory / 'cancel').exists():
             outcome, message = 'CANCELLED', 'Cancelled before worker launch.'
         else:
             with open(directory / 'stdout.frame', 'w+b') as output:
@@ -99,7 +112,10 @@ def supervise(directory):
                         raise ValueError('OUTPUT_LIMIT')
                     time.sleep(.02)
                 else:
-                    if os.waitid(os.P_PID, process.pid, os.WEXITED | os.WNOWAIT).si_status == 0:
+                    exit_status = os.waitid(os.P_PID, process.pid, os.WEXITED | os.WNOWAIT).si_status
+                    if exit_status == 42:
+                        outcome, message = 'EXPIRED', 'Start authorization expired before the operation handler.'
+                    elif exit_status == 0:
                         output.seek(0)
                         raw = read_frame(output, attempt.spec.bundle.request.resources.max_output_bytes)
                         if output.read(1):
@@ -134,6 +150,8 @@ def verify():
 def main():
     if len(sys.argv) == 3 and sys.argv[1] == 'supervise':
         supervise(sys.argv[2])
+    elif len(sys.argv) == 3 and sys.argv[1] == 'slurm-supervise':
+        supervise(sys.argv[2], slurm=True)
     elif sys.argv[1:] == ['run']:
         run()
     elif sys.argv[1:] == ['verify']:

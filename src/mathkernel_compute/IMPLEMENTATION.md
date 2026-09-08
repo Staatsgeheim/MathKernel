@@ -1,87 +1,110 @@
 # Remote-compute implementation checkpoint
 
-## Grounding
+## Grounding and branch
 
-- Repository: `Staatsgeheim/MathKernel`; input branch `master`.
+- Repository: `Staatsgeheim/MathKernel`; source branch `master`.
 - Exact base: `bf71fc88333ee6cf455cb12538e64fc385512a8a`, merged Studio PR #1.
-- Implementation branch: `mathkernel-remote`, created locally from that commit.
+- Implementation branch: `mathkernel-remote`; no merge into `master`.
+- Previous local R0–R2 checkpoint: `3b71464ae005c25ad9f48c550ca5726d9528c550`.
 - Design: supplied `MathKernel_Remote_Compute_Design_Package.zip`, MK-RHC-001,
-  revision 1.0, 7 September 2026. Implementation checkpoint: 8 September 2026.
-- GitHub API branch creation returned 403, `Resource not accessible by integration`.
-  No default-branch changes or remote publication are included in this checkpoint.
+  revision 1.0, 7 September 2026. Implementation date: 8 September 2026.
+- Package development version: `1.4.0.dev2`; optional extra: `compute`.
 
-The design baseline was 1.3.0.dev30. Current master is 1.3.1.dev1 and already
-contains the independent `mathkernel_workflow` service and Studio adapter. That
-service returns host-owned local MathResult snapshots; it is not reused as a
-remote-worker admission boundary. The new subsystem is `mathkernel_compute`, with
-its own DTOs, journal, supervisor and local verifier. Development version becomes
-`1.4.0.dev1`; protocol remains `1.0`, bundle `mk.bundle/1`, journal schema 1.
+The independent `mathkernel_compute` subsystem does not replace the mathematical
+facade, legacy `job_*` APIs, `mathkernel_workflow`, or the Studio host. Remote
+candidates remain independent DTOs, not serialized kernel results. Existing formal
+and interval engines are not claimed as qualified remote verifiers.
 
-The live kernel still exposes `_JOB_RUNNERS` for Collatz and cuboid local jobs.
-Their API and evidence behavior are unchanged. The cuboid operation's Python
-engine and the typed signal module's numeric convolution are the two registered
-pilot handlers. Provider SDKs are not imported, installed or initialized by the
-base package. Existing formal/interval engines are not used as remote verifiers;
-no claim about qualifying those paths is implied.
+## Implemented boundary
 
-## Delivered boundary
+This checkpoint extends the R0–R2 local pilot with **native R3 SSH and R4 single-job
+Slurm adapters**. It does not complete all requirements or acceptance gates of R3/R4,
+all providers, or the design's 114-case acceptance catalog.
 
-This is an **R0–R2 local pilot**, not an implementation of all remote providers or
-all 114 design acceptance cases. It establishes and tests the common lifecycle
-and untrusted-output boundary on two self-contained operation/profile combinations.
-
-| Area | Implemented | Deliberately not advertised yet |
+| Area | Delivered behavior | Remaining boundary |
 | --- | --- | --- |
-| Contracts | Strict frozen request/parameter/plan/spec/grant/attempt/job/lease/candidate/report/receipt models; RFC 8785 bytes; independent schema versions; full SHA-256 identities | Generic context/object dependency export, array codecs and arbitrary registry reflection |
-| Planning/authority | Local static target, pinned runtime code/dependency identities, finite limits, immutable plans, host-only single-attempt grants, policy/expiry rechecks, atomic duplicate/concurrency protection | Paid grants, provider prices, currency conversion, provider spend caps, export/provisioning authority |
-| Journal | Separate versioned SQLite journal, exclusive coordinator lock, integrity hashes, request and attempt uniqueness, outbox intent, events, manifests/references, reports, leases and local-zero reservations/usage | Distributed coordinator, network-filesystem journal, authenticated multi-client server |
-| Worker | Fixed bounded JSON framing, allowlisted handlers/environment, detached Linux supervisor, private retained output, native worker deadline, process-group cleanup with subreaper adoption | Windows Job Objects, macOS qualification, network/RAM isolation, GPU quotas, independent external watchdog |
-| Recovery | Controller-process exit, pending/ambiguous intent, idempotent request lookup, visibility delays, immutable candidates, monotonic observations, cleanup uncertainty, stale verifier state | Universal exactly-once promise, automatic replacement of unresolvable launches, provider accounting |
-| Admission | Quarantine before mathematical models, exact problem/attempt binding, integer witness checking, independent complete Euclid enumeration, Decimal numerical reference, locally built evidence | Generic proof/Lean import, interval certification, arbitrary approximate ancestry graphs, typed kernel object re-import |
-| Interfaces | Python compute client and explicit CLI; interactive local approval command; inert replay data; operation descriptor inventory | New MCP tools or Studio compute adapter; these existing interfaces remain unchanged |
+| R0–R2 contracts/lifecycle | Frozen strict contracts, RFC 8785 identities, exact input strings, explicit operation registry, scoped grants, independent SQLite journal, durable outbox, local native supervisor, quarantine and independent verification | Generic object/context export, array codecs, distributed coordinator and general verifier registries |
+| R3 planning/authority | Explicit operator target aliases; host/port/account and allocation review; pinned known-hosts content, worker configuration and remote/local runtime profiles; exact-scope single-attempt export approval | Remote target auto-selection, paid authority and provider pricing |
+| R3 SSH | Real OpenSSH client; restricted config sources, strict host keys, no forwarding/prompts; fixed gateway command; bounded data-only stdin; private confined spool; durable acceptance and duplicate/conflict handling | External OpenSSH daemon/host qualification, Windows/macOS controller qualification |
+| R3 supervision/recovery | Detached native Linux supervisor, start/runtime deadlines, process incarnation checks, cancellation intent, bounded retained bytes, host disconnect and controller exit recovery, uncertainty on unavailable ownership | Independent watchdog for host/supervisor failure; automatic retention/garbage collection |
+| R4 native Slurm | Reviewed partition/account/QOS/constraint and resource shape; fixed sbatch script, one node/task/CPU; no login-node mathematics; explicit queue/accounting fields; lost-ack reconciliation; UUID/digest/UID/submit-incarnation checks; no requeue; filtered cancellation | Live cluster/site qualification, Apptainer/SIF profile, arrays/MPI, GPU, federation |
+| R4 outcomes/accounting | Separate OOM/timeout/cancel/preempt/node-failure/expiry/exit states; no completion inference from absent squeue; no cleanup inference from scancel ack; bounded CPU/memory reservation and retained sacct usage | Institutional allocation-credit prices and currency conversion; exact queue expiry cancellation while controller is offline |
+| Admission | Raw candidate bytes preserved into quarantine; exact attempt/input/execution binding; independent Euclid/witness or Decimal numerical checks; local verifier runtime distinct from worker runtime; only new local evidence admitted | Arbitrary remote evidence/Lean import, general exact/numeric ancestry graphs and typed object re-import |
+| Interfaces | Python client, operator profiles, explicit probe/workspace/approval CLI, inert replay, setup guide | Compute MCP tools, Studio compute integration, managed cloud providers |
 
-A lost supervisor retains `CLEANUP_UNKNOWN`. There is no claim of unattended
-recovery from host destruction or malicious local operator code. Only the detached
-supervisor continues deadlines when the controller disappears. No cloud resource
-was created, no provider account accessed, and no provider charge incurred.
-Electricity/hardware cost was not measured. No test resource was intentionally
-left running; fake-provider cleanup uncertainty exists only in test fixtures.
+`auto` remains local CPU. A remote request cannot synthesize its connection profile
+or issue its own grant. Existing-host costs and Slurm allocation credits remain
+unknown; the plan does not present a zero-price estimate for remote work. No paid
+host was provisioned or provider account accessed during implementation.
 
-## Verification record
+## Protocol and retained records
 
-Completed on the supplied Linux/Python 3.12 runtime:
+Worker candidates use protocol `1.0`, bundles `mk.bundle/1`, and the controller
+journal remains schema 1. The fixed gateway adds its own `mk.gateway/1` protocol.
+New remote bindings and attempt start deadlines are omitted from canonical local
+records when absent, preserving existing R0–R2 plan/spec/attempt identities. Unknown
+schema versions and unknown fields remain rejected. New side effects still require
+current policy/runtime identities; upgrading source is not implicit reauthorization.
 
-- 27 compute tests passed, including two real operation journeys, controller
-  process exit, cancellation, deadline, verifier timeout, nested process cleanup,
-  unrelated-process survival, concurrent duplicate submissions, journal rollback,
-  lost acknowledgements, delayed visibility, missing output, conflicting bytes,
-  stale observations, scope isolation and hostile candidate evidence.
-- 56 selected legacy jobs/cuboid/signal/evidence compatibility tests passed;
-  1 CUDA test skipped because a CUDA runtime was unavailable.
-- 15 existing Studio workflow backend tests passed.
-- Existing skill metadata validation passed.
-- Wheel/sdist and installed-wheel execution evidence is recorded in the handoff's
-  `verification.txt` alongside exact commands and artifacts.
+The remote endpoint locks a private spool across independent SSH sessions. A durable
+intent precedes native launch or sbatch. If dispatch becomes ambiguous, observation
+never calls submit again. Status/cancel/fetch carry only references, not another
+copy of mathematical inputs. Gateway replies preserve candidate bytes through a
+bounded base64 wrapper, including malformed/untrusted candidate documents, for local
+quarantine before mathematical parsing.
 
-The first compatibility attempt was 54 passed, 2 skipped, 1 failed: a legacy test
-unconditionally requested Numba while the optional dependency was absent. Installing
-the optional Numba dependency resolved it; no kernel algorithm was changed.
-The full MathKernel suite, all Python versions in CI, Windows/macOS, live providers,
-GPU execution and the complete design acceptance catalog were not run.
+The controller separately records transport availability. Unreachability preserves
+last confirmed execution observations and exposes unresolved cleanup. Local startup
+reconciliation is optional; CLI discovery/plan/status open with recovery disabled,
+so a read-only command cannot dispatch an old pending intent. Explicit reconcile
+and submit still process already authorized intents.
 
-The automated cases cover portions of BASE, SCHEMA, ARTIFACT, AUTH, RECOVERY,
-WORKER and VERIFY. They do not certify the full families: for example exact
-string preservation is tested but typed large-integer object export is not;
-private-file confinement is tested but general array/archive decoding is absent;
-local concurrency reservations are tested but monetary provider budgets are not.
+## Qualification evidence
 
-## Next implementation slice
+Verified on Linux/Python 3.12: **63 compute tests passed** (plus 20 subtest
+assertions), **56 selected legacy compatibility tests passed** (1 CUDA skip),
+and **15 workflow backend tests passed**: 134 passing selected tests, 1 skip.
+Skill metadata validation, wheel/sdist creation, wheel contents and entrypoint
+validation passed. The handoff's `verification.txt` records the installed-wheel
+journeys and exact commands.
 
-R3 should add explicitly onboarded existing Linux SSH hosts using this data-only
-contract, strict host-key verification, fixed commands, bounded staging and durable
-supervision. First reconcile the native runtime identity across the actual target
-installation, and qualify disconnect, cancellation and output retention on a real
-host. Do not replace the current candidate DTO with MathResult deserialization or
-add fake successful provider modules. Slurm and managed providers follow their
-own design gates. Studio/MCP integration must use a host-owned coordinator rather
-than letting a browser or model issue its own authorization.
+The compute suite includes both R0–R2 regression coverage and new cases in
+`test_remote.py` and `test_slurm.py`.
+
+| Design case | Evidence in this checkpoint | Qualification limit |
+| --- | --- | --- |
+| SSH-01 | Actual OpenSSH client rejects empty and mismatched known-host files before sending a gateway command | Loopback Paramiko server; external OpenSSH daemon pending |
+| SSH-02 | Profile/path/schema injection rejection; fixed remote command; truncated input has no staging effect | Two registered self-contained DTOs only |
+| SSH-03 | Actual encrypted transport, reconnect, retained output, controller subprocess exit, duplicate acceptance | One Linux host simulates both sides; distributed failure modes pending |
+| SSH-04 | PID incarnation mismatch retains LOST; cancellation cannot kill an unrelated process | Native Linux ownership; Windows remote worker unsupported |
+| SSH-05 | Cancellation/deadline cleanup and unrelated-process survival; no host destruction API | Automatic deletion/retention not implemented |
+| SLURM-01 | No worker before allocation; simulator runs actual generated batch script and candidate passes local verification | Scheduler simulator, not a real Slurm daemon/cluster |
+| SLURM-02 | Missing queue/delayed accounting retain unknown allocation; no fabricated result | Site accounting configuration must be qualified |
+| SLURM-03 | scancel acknowledgement leaves ACTIVE until terminal accounting; scheduler UID/name filters inspected | Cluster cancellation races need live qualification |
+| SLURM-04 | Changed submit incarnation, duplicate rows and restart counts block ownership/admission; actual requeue entrypoint rejects execution | Single-job profile only; site-enforced no-requeue still required |
+
+Other new checks cover exact export approval scope, remote capacity/scope/path
+boundaries, expired start authority, bounded transport output/time, raw hostile
+candidate preservation, prior local canonical bytes and read-only startup.
+The previous local controller exit, process-tree cleanup, mathematical admission,
+concurrency, rollback and journal-integrity tests remain in the suite.
+
+The initial loopback SSH fixture closed its transport too early after sending the
+channel result. Waiting for the client to consume channel closure fixed the
+intermittent transfer failure. The server remains a test-only dependency; Paramiko
+is not installed by the compute extra or imported by the product. Required runtime
+native SSH uses the system OpenSSH client.
+
+No external compute account/host, live Slurm cluster, GPU, Windows/macOS controller,
+Apptainer image or full 114-case run was used. The CI Python matrix is defined but
+was not remotely executed in this session. Existing Studio UI/browser code did not
+change; no new browser qualification is claimed.
+
+## Next work
+
+Qualify the native profiles on an explicitly authorized OpenSSH host and Slurm
+site, including actual accounting fields, allocation cleanup, transport loss and
+site clock behavior. Add pinned Apptainer/SIF support and unattended queue-retention
+policy before claiming the full R4 release gate. Continue with R5 managed-provider
+adapters using these same grant/outbox/receipt/admission boundaries; do not weaken
+candidate admission or substitute simulated provider success for a real backend.

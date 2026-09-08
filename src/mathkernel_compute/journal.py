@@ -18,10 +18,13 @@ class ComputeJournal:
         self.root.mkdir(mode=0o700, parents=True, exist_ok=True)
         self.owner = open(self.root / 'coordinator.lock', 'a+b')
         try:
-            if os.name != 'posix':
-                raise RuntimeError('Local supervisor support is currently Linux only')
-            import fcntl
-            fcntl.flock(self.owner, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            if os.name == 'nt':
+                import msvcrt
+                self.owner.seek(0); self.owner.write(b'0'); self.owner.flush(); self.owner.seek(0)
+                msvcrt.locking(self.owner.fileno(), msvcrt.LK_NBLCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(self.owner, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BaseException:
             self.owner.close()
             raise RuntimeError('Coordinator unavailable or state directory already owned')

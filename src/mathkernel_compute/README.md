@@ -1,9 +1,10 @@
 # Optional compute orchestration
 
-This is the first local execution pilot for the remote/heterogeneous compute design.
-It provides the common planning, authorization, journal, worker and verification
-boundary. **The current adapter is Linux native local CPU only.** SSH, Slurm,
-Modal, Runpod, Lambda, GPU profiles and remote provisioning are not registered.
+This optional pilot provides the common planning, authorization, journal, worker
+and verification boundary, with Linux local CPU, existing Linux SSH hosts and a
+native single-job Slurm adapter. Read [remote setup and limitations](REMOTE.md)
+before onboarding SSH/Slurm targets. Managed providers, Apptainer, GPU profiles and
+remote provisioning are not registered.
 
 Install from this branch with `python -m pip install '.[compute]'`. The extra adds
 RFC 8785 canonicalization and SciPy. Core import does not import this package,
@@ -51,7 +52,8 @@ Use the actual references returned by the commands. `approve-local` is a trusted
 host action: it prints the plan and requires its digest to be typed at a terminal.
 It is not an agent-facing MCP operation. Python host applications can use the
 private `_authorize_local` integration point; possession of arbitrary request
-fields does not issue a grant. Only local execution is grantable in this pilot.
+fields does not issue a grant. Remote execution has a separate exact-scope
+`approve-remote` action; local grants cannot export inputs.
 
 `status` and `result` read retained facts. `reconcile` explicitly observes the
 supervisor and collects output. `verify` performs a separate local check. Until
@@ -91,6 +93,10 @@ records, revisions, grants and reservations. No legacy KernelStore migration is
 performed. Unknown journal versions are rejected. The directory is local storage,
 not a distributed database or multi-tenant service.
 
+Python clients reconcile already-authorized intents on open by default. Use
+`reconcile_on_open=False` for discovery or inspection; CLI commands use this mode
+and invoke recovery explicitly.
+
 Plan bytes pin the input bundle, exact operation contract, runtime code identity,
 Python/dependency versions and operator policy. Changes or expiry invalidate new
 side effects. A plan performs no input staging or worker launch. Submission commits
@@ -125,7 +131,8 @@ cost are independent observations. Local provider allocation cost is zero;
 electricity and hardware usage are unmeasured. This pilot has no paid-account
 budget grant or provider-enforced spend cap. Cleanup uncertainty retains concurrency
 reservation. No worker network isolation, hard RAM quota, Windows Job Object,
-macOS process supervision or stable remote support is advertised.
+macOS process supervision or external-host/cluster qualification is advertised.
+SSH/Slurm profiles are native pilots with explicit operational limitations.
 
 Supervisor/controller source is trusted installed code. The process boundary is
 not an arbitrary-code sandbox. Candidate data is bounded, quarantined, bound to the
