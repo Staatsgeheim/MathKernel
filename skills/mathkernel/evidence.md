@@ -104,3 +104,12 @@ Before accepting a domain operation, verify that:
 6. `does_not_exist`/`infeasible` claims have proof-grade semantics appropriate
    to the domain;
 7. serialization round-trips without changing evidence roles or source lineage.
+
+## Compute candidates
+
+Worker bytes enter `RemoteResultEnvelope`, never a legacy `MathResult` validator.
+Only local checking constructs accepted evidence, bound to candidate, bundle,
+execution and claim. A worker's trust/verified/image labels cannot affect it.
+The cuboid pilot separates witness validity from complete-search coverage; the
+convolution pilot stays numeric with fixed binary64 input ancestry. Verifier
+timeouts are inconclusive. See [remote-compute.md](remote-compute.md).

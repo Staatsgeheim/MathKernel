@@ -78,3 +78,11 @@ NVRTC RawKernel, collatz CUDA sieve, koopman GPU matmul).
   per-side enumeration, not result count, drives cost.
 - GPU pays off for large dense work (1024+ mode koopman matrices, big
   sieve classes); small cases are CPU-faster due to transfer overhead.
+
+## Compute service performance boundary
+
+The optional compute pilot pins one Python sweep worker or the existing SciPy
+convolution path, plus a separately budgeted local verifier. It does not choose
+CUDA from a domain name. Include initialization, serialization, retained-output
+collection and local checking in timings. No remote speedup is claimed. Read
+[remote-compute.md](remote-compute.md) before selecting this execution path.

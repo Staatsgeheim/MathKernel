@@ -40,3 +40,12 @@ seeded random MathIR over the guarded numeric fragment and compares the
 mpmath 40-dps path against the float64 compiled path. Disagreements return
 `status="conflict"` with the offending expressions — they are surfaced, never
 absorbed. Parallel over the process pool; wired into the test suite.
+
+## Compute journal
+
+The compute pilot uses its own `compute.sqlite3` and private attempt/quarantine
+spool. It does not migrate KernelStore. One coordinator owns the directory.
+Submission IDs and outbox intent survive restart; an unknown launch is reconciled
+without replacement. Closing a client does not cancel its supervisor. Archive the
+state directory only after owned work and cleanup are resolved. See
+[remote-compute.md](remote-compute.md).

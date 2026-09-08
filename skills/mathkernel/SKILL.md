@@ -40,6 +40,12 @@ When working with `.mkstudio.json` documents, Studio screenshots, or the optiona
 Studio host, read [studio.md](studio.md). These are authoring/presentation objects;
 opening or connecting a graph does not establish execution or mathematical evidence.
 
+## Optional compute planning and execution
+
+For `mathkernel_compute` or `mathkernel-compute`, read [remote-compute.md](remote-compute.md).
+The current pilot is a separate Linux local supervisor with explicit grants and
+local candidate verification. Do not route existing jobs to it automatically.
+
 ## Shared multimodal projection contract
 
 Visualization and scientific audio now share `mathkernel_projection.MultimodalProjection`. Use it for domain objects rather than independently flattening data in each frontend. The live catalog covers fields, matrices/tensors, graphs/evidence trees, distributions, spectra/complex data, meshes/complexes, ODE/PDE solutions, optimization/inference, finite dynamics/finite fields, relation geometry, sets/partitions/piecewise objects, quantities, ensembles and explicit higher-dimensional projections. Projection parameters and information loss are provenance; they never create mathematical evidence.
