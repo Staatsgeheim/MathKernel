@@ -3938,6 +3938,10 @@ class MathKernel:
         domains = ctx.domains if ctx else {}
         assumptions = [a.expression for a in ctx.assumptions] if ctx else []
         fragment = classify_fragment(ir, domains)
+        if expression_trust(self, expr_id) not in {TrustLevel.EXACT, TrustLevel.SYMBOLIC, TrustLevel.FORMAL}:
+            return MathResult(ok=True, status="unknown", engine="prove",
+                              data={"fragment": fragment},
+                              warnings=["Exact/formal proof is disabled for uncertain input ancestry; use exact inputs or interval methods."])
         data: dict = {"fragment": fragment}
         trust = TrustLevel.UNKNOWN
         status = "unknown"
@@ -4003,7 +4007,10 @@ class MathKernel:
                                   errors=[f"Unknown expr_id: {eid}"], engine="prove")
             ctx = self.contexts.get(context_id) if context_id else None
             jobs.append({"expr_id": eid, "source": src,
-                         "domains": ctx.domains if ctx else {}})
+                         "domains": ctx.domains if ctx else {},
+                         "assumptions": [render_expr(a.expression) for a in ctx.assumptions] if ctx else [],
+                         "uncertain_ancestry": expression_trust(self, eid) not in
+                             {TrustLevel.EXACT, TrustLevel.SYMBOLIC, TrustLevel.FORMAL}})
         results = process_map(_prove_job, jobs, workers=resolve_workers(
             workers, cap=self.settings.max_workers))
         n_valid = sum(1 for r in results if r.get("status") == "valid")
@@ -7739,30 +7746,32 @@ class MathKernel:
 
     def prove_equivalence(self,left: str,right: str, context_id: str|None=None, formal: bool=True):
         l,r=parse_math(left),parse_math(right)
-        input_trust = self._trust_min(self._expr_trust(l), self._expr_trust(r))
-        approximate = input_trust == TrustLevel.NUMERIC
         ctx = self.contexts.get(context_id) if context_id else None
+        assumptions = [a.expression for a in ctx.assumptions] if ctx else []
+        approximate = any(self._expr_trust(ir) == TrustLevel.NUMERIC
+                          for ir in [l, r, *assumptions])
         # Formal backends commonly encode decimal syntax as exact rationals. That
         # proves a different statement from one containing approximate RealNodes,
         # so never issue a formal certificate for approximate inputs.
         status, trust, evidence, detail = self.verifier.equivalence(l, r, ctx, formal=(formal and not approximate))
-        trust = self._trust_min(trust, input_trust)
-        if approximate:
-            detail.pop("lean_certificate", None)
-            detail.pop("lean_tactic", None)
-            evidence = [e for e in evidence if getattr(e, "engine", "") != "lean"]
+        # Symbolic syntax is not uncertain ancestry: a checked proof may
+        # establish exact/formal evidence about an exact symbolic statement.
         outward = {VerificationStatus.PROVED:"verified", VerificationStatus.DISPROVED:"refuted", VerificationStatus.UNKNOWN:"unknown"}[status]
         step=self._record(DerivationStep(step_id=self._id("step"),operation="prove_equivalence",output=detail.get("symbolic_difference"),
-            engine="verification_coordinator",trust=trust,evidence=evidence))
+            engine="verification_coordinator",trust=trust,evidence=evidence,
+            conditions=[render_expr(a) for a in assumptions]))
         warnings=[]
         if approximate:
             warnings.append("Approximate decimal input: equivalence is not an exact/formal certificate; use exact rationals or interval certification for stronger evidence.")
         if status is VerificationStatus.UNKNOWN: warnings.append("No backend established or refuted the statement in its supported fragment.")
-        return MathResult(ok=True,status=outward,data=detail,warnings=warnings,trust=trust,engine="verification_coordinator",derivation=[step],evidence=evidence)
+        return MathResult(ok=True,status=outward,data=detail,warnings=warnings,trust=trust,engine="verification_coordinator",derivation=[step],evidence=evidence,
+                          assumptions_used=[render_expr(a) for a in assumptions])
 
     def counterexample(self,left: str,right: str, context_id: str|None=None):
         l,r=parse_math(left),parse_math(right)
-        if self._trust_min(self._expr_trust(l), self._expr_trust(r)) == TrustLevel.NUMERIC:
+        ctx = self.contexts.get(context_id) if context_id else None
+        assumptions = [a.expression for a in ctx.assumptions] if ctx else []
+        if any(self._expr_trust(ir) == TrustLevel.NUMERIC for ir in [l, r, *assumptions]):
             return MathResult(ok=True,status="unknown",
                 warnings=["Exact SMT counterexamples are disabled for approximate decimal inputs; use exact rationals or interval methods."],
                 trust=TrustLevel.UNKNOWN,engine="z3")

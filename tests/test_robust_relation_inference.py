@@ -79,6 +79,7 @@ def test_gaussian_test_invariant_to_permutation():
 
 
 def test_hac_recoloring_matches_multivariate_var_truth():
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     from scipy.signal import lfilter
     rng=np.random.default_rng(29)
     # A diagonal VAR in a rotated chart tests orientation of recoloring.

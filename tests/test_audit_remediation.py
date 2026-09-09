@@ -162,6 +162,7 @@ def geometry(delta):
 
 
 def test_small_positive_information_is_not_exact_blindness():
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     bounds = composite_detection_bounds(geometry(1e-6), 0.1)
     assert not bounds.exact_blind_direction
     assert bounds.weakest_information_retention > 0
@@ -186,6 +187,7 @@ def test_tolerance_loss_is_reported_as_numerically_unresolved():
 
 
 def test_capped_search_does_not_claim_target_power():
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     bounds = composite_detection_bounds(geometry(0.001), 0.001, max_samples=2_000_000_000)
     assert bounds.asymptotic_composite_samples is None
     assert bounds.asymptotic_search_status == "search_limit_reached"
@@ -194,6 +196,7 @@ def test_capped_search_does_not_claim_target_power():
 
 
 def test_unbounded_legacy_cap_case_actually_reaches_target():
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     from scipy.stats import chi2, ncx2
     bounds = composite_detection_bounds(geometry(0.001), 0.001)
     n = bounds.asymptotic_composite_samples

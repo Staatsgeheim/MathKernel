@@ -102,6 +102,7 @@ def test_bode_represents_sampled_zero_and_nyquist_rejects_complex_completion():
 
 
 def test_root_locus_residuals_and_branch_semantics():
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     k = MathKernel()
     source = create(k, "TransferFunction", numerator=[1], denominator=[1, 3, 2])
     result = k.apply(source, "root_locus", {"gains": [0, 1, 10], "mode": "numeric"})
@@ -140,6 +141,7 @@ def test_explicit_discrete_control_representation_and_identity_conversion():
 
 
 def test_windowed_fir_family_has_symmetric_coefficients_and_direct_execution():
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     k = MathKernel()
     design = create(k, "FilterDesign", family="fir_window", order=8, cutoff=[10],
                     sample_rate=100, window="blackman")
@@ -152,6 +154,7 @@ def test_windowed_fir_family_has_symmetric_coefficients_and_direct_execution():
 
 
 def test_signal_analysis_objects_survive_restricted_persistence(tmp_path):
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     settings = Settings(store_path=str(tmp_path/"d7.sqlite"))
     k = MathKernel(settings)
     source = create(k, "TransferFunction", numerator=[1], denominator=[1, 1])
@@ -218,6 +221,7 @@ def test_signal_analysis_resource_limits_cover_roots_samples_and_curve_points():
 
 @pytest.mark.parametrize("kind,order", [("lowpass", 8), ("highpass", 8), ("bandpass", 8), ("bandstop", 8)])
 def test_windowed_fir_common_response_kinds(kind, order):
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     k = MathKernel()
     cutoff = [10, 20] if kind.startswith("band") else [10]
     spec = create(k, "FilterDesign", family="fir_window", order=order, cutoff=cutoff,

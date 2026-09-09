@@ -59,7 +59,12 @@ def test_equivalence_verified_and_evidence_is_visible():
     k=MathKernel(); r=k.prove_equivalence("(x+y)^2", "x^2 + 2*x*y + y^2")
     assert r.status == "verified"
     assert any(e.engine == "sympy" for e in r.evidence)
-    assert "lean_certificate" in r.data and r.data["lean_tactic"] == "ring"
+    if "lean_certificate" in r.data:
+        assert r.data["lean_tactic"] == "ring"
+        assert any(p.engine == "lean" and p.verified and p.certificate == r.data["lean_certificate"]
+                   for p in r.evidence_bundle.proof)
+    else:
+        assert r.data["lean_candidate"]["checked"] is False
 
 
 def test_lean_tactic_selection_ring_norm_num_and_linarith():

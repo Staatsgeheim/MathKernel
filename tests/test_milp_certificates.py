@@ -14,6 +14,8 @@ from test_engineering_signal import create
     ({'variables':['x'],'c':[1],'lower':[None],'sense':'max'},'unbounded'),
 ])
 def test_original_data_outcomes_are_certified_and_replayable(mode,definition,outcome):
+    if mode == "numeric":
+        pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     k=MathKernel();src=create(k,'OptimizationProblem',**definition)
     result=k.apply(src,'solve',{'mode':mode})
     assert result.ok,result.errors
@@ -37,6 +39,7 @@ def test_forged_farkas_and_ray_are_rejected():
 
 
 def test_decimal_witness_never_certifies_even_exact_looking_contradiction():
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     k=MathKernel();p=create(k,'OptimizationProblem',variables=['x'],c=[1],lower=[2],upper=[1])
     r=k.apply(p,'verify_certificate',{'certificate':{'kind':'infeasible','inequality_dual':['1.0',1]}})
     assert r.trust==TrustLevel.NUMERIC
@@ -59,6 +62,8 @@ def test_solver_flag_alone_does_not_prove_infeasible(monkeypatch):
 
 @pytest.mark.parametrize('mode',['exact','numeric'])
 def test_milp_tree_proves_integer_optimum_and_survives_transport(mode):
+    if mode == "numeric":
+        pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     k=MathKernel();p=create(k,'OptimizationProblem',variables=['x'],c=[-1],upper=['5/2'],integrality=[1])
     r=k.apply(p,'certify_milp',{'mode':mode})
     assert r.ok,r.errors
@@ -99,6 +104,7 @@ def test_milp_tamper_rejection(mutation):
 
 
 def test_mixed_integer_continuous_problem_and_maximize():
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     k=MathKernel();p=create(k,'OptimizationProblem',variables=['x','y'],c=[2,1],A_ub=[[1,1]],b_ub=['7/2'],upper=[3,3],integrality=[1,0],sense='max')
     r=k.apply(p,'certify_milp',{'mode':'numeric'})
     assert r.ok,r.errors
@@ -107,6 +113,7 @@ def test_mixed_integer_continuous_problem_and_maximize():
 
 
 def test_small_random_milps_against_exhaustive_grid():
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     rng=np.random.default_rng(203)
     for _ in range(8):
         c=rng.integers(-4,5,2).tolist();a=rng.integers(1,4,2).tolist();rhs=int(rng.integers(2,10))

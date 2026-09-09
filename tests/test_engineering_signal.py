@@ -73,6 +73,7 @@ def test_convolution_correlation_and_all_operand_ancestry():
 
 
 def test_filter_recurrence_and_roundtrip_to_control():
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     k=MathKernel()
     filt=create(k,'Filter',numerator=[1],denominator=[1,'-1/2'],sample_rate=2)
     signal=create(k,'Signal',samples=[1,0,0,0,0],sample_rate=2)
@@ -89,6 +90,7 @@ def test_filter_recurrence_and_roundtrip_to_control():
 
 @pytest.mark.parametrize('family',['butterworth','chebyshev1','chebyshev2','bessel','elliptic'])
 def test_iir_design_uses_sos_and_keeps_design_claim_numeric(family):
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     k=MathKernel()
     design=create(k,'FilterDesign',family=family,order=4,cutoff=[10],sample_rate=100)
     out=k.apply(design,'design',{'mode':'numeric'})
@@ -105,6 +107,7 @@ def test_iir_design_uses_sos_and_keeps_design_claim_numeric(family):
 
 
 def test_stft_resample_window_and_cross_spectrum_metadata():
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     k=MathKernel()
     src=create(k,'Signal',samples=[1,2,3,4,5,6,7,8],sample_rate=8)
     w=k.apply(src,'window',{'kind':'hann'})
@@ -139,6 +142,7 @@ def test_signal_limits_units_and_strict_integer_controls():
 
 
 def test_numeric_convolution_matches_direct_complex_definition():
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     k=MathKernel()
     a=create(k,'Signal',samples=['complex(1,2)',2,-3])
     b=create(k,'Signal',samples=[1,'complex(0,1)'])
@@ -165,6 +169,7 @@ def test_high_precision_roundtrip_retains_precision_ancestry():
 
 
 def test_large_numeric_window_does_not_use_symbolic_path():
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     k=MathKernel(Settings(max_exact_window_size=8))
     src=create(k,'Signal',samples=list(range(32)))
     assert not k.apply(src,'window').ok

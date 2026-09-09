@@ -714,16 +714,27 @@ class LeanEngine:
     def prove_relation(self, relation: RelationNode, assumptions: list[Expr] | None = None,
                        integer: bool = False, timeout: float | None = None):
         """Prove a relation goal; returns (status, script, tactic, error)."""
+        self._require_exact_inputs([relation, *(assumptions or [])])
         if timeout is None:
             timeout = self.timeout
         script, tactic = self.build_relation_certificate(relation, assumptions, integer)
         return self._check_script(script, tactic, timeout)
 
     def prove_equivalence(self, left: Expr, right: Expr, assumptions: list[Expr] | None = None, timeout: float | None = None):
+        self._require_exact_inputs([left, right, *(assumptions or [])])
         if timeout is None:
             timeout = self.timeout
         script, tactic = self.build_certificate(left, right, assumptions)
         return self._check_script(script, tactic, timeout)
+
+    @staticmethod
+    def _require_exact_inputs(expressions: list[Expr]) -> None:
+        from .reasoning import _walk
+        kinds: set[str] = set()
+        for expression in expressions:
+            _walk(expression, set(), set(), kinds)
+        if "real" in kinds:
+            raise ValueError("Formal proofs are disabled for approximate decimal inputs or assumptions")
 
     def prove_ring_equivalence(self, left: Expr, right: Expr, timeout: float | None = None):
         status, script, _tactic, error = self.prove_equivalence(left, right, [], timeout)
@@ -756,17 +767,12 @@ class LeanEngine:
         return {"status": "error", "error": error}
 
     def _check_script(self, script: str, tactic: str, timeout: float):
-        from .lean_bootstrap import ensure_lean_toolchain, run_lean_script, skip_install
+        from .lean_bootstrap import run_lean_script
         if not self.available:
-            if skip_install():
-                return "unavailable", script, tactic, "Lean/Mathlib toolchain is not installed"
-            try:
-                ensure_lean_toolchain()
-            except Exception as exc:
-                return "unavailable", script, tactic, str(exc)
+            return "unavailable", script, tactic, "Lean/Mathlib is unavailable; run mathkernel-lean-setup explicitly to install or repair it"
         try:
             p = run_lean_script(script, timeout)
-        except FileNotFoundError as exc:
+        except OSError as exc:
             return "unavailable", script, tactic, str(exc)
         except subprocess.TimeoutExpired:
             return "error", script, tactic, "Lean proof timed out"

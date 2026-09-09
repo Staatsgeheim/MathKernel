@@ -20,8 +20,21 @@ proving interface, beyond the Lean arithmetic fragment.
 3. **Lean certificate** — for qf relation goals in the arithmetic fragment
    when SMT says valid. Tactics: `norm_num` (closed), `ring` (polynomial
    identities), `linarith`/`nlinarith` (rational, with assumptions),
-   `omega` (linear integer arithmetic, a decision procedure). Finite decimal
-   literals are exact rationals; division by nonzero literals is supported.
+   `omega` (linear integer arithmetic, a decision procedure). Division by nonzero
+   exact literals is supported. Approximate decimal inputs, assumptions and
+   inherited approximate values are refused by the exact/formal proof routes;
+   use exact rationals or interval certification.
+
+Lean/Mathlib setup is explicit: `mathkernel-lean-setup` installs the pinned local
+toolchain, `--check` probes its health without downloads, and `--repair` stages
+a replacement before activation. Budget several GiB. Proof calls, discovery and
+MCP startup never install or repair anything. Missing or unhealthy Lean reports
+`unavailable` while the other verifiers remain usable.
+
+`prove_equivalence` publishes `lean_certificate` only with a matching verified
+Lean proof record. An unchecked `lean_candidate` has `checked: false` and is not
+proof evidence. Refuted results contain neither artifact. Declined independent
+verifiers are diagnostic; unknown required dependencies still limit trust.
 
 ## Trust
 

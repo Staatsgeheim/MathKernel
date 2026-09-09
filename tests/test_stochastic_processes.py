@@ -117,6 +117,7 @@ def test_gp_singular_conditioning_refuses_without_noise_but_jitter_is_explicit()
 
 
 def test_ctmc_generator_transition_distribution_and_stationary_law():
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     kernel = MathKernel(); chain_id = create(kernel, "ctmc", {
         "states": ["a", "b"], "generator": [[-2, 2], [1, -1]],
         "initial_distribution": [1, 0],

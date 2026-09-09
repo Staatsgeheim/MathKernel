@@ -1,6 +1,7 @@
 # Copyright (c) 2026 Maarten Boone
 # SPDX-License-Identifier: MIT
 import asyncio
+import pytest
 
 import sympy as sp
 
@@ -231,6 +232,7 @@ def test_exact_singular_outcomes_are_explicit_artifacts():
 
 
 def test_numeric_sparse_solve_reports_residual_and_conditioning():
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     kernel = MathKernel(); *_, system = assemble(kernel,
         definition=problem_definition(source="1.0", coefficient="-1.0"))
     solution = kernel.apply(system.data["object_id"], "solve", {
@@ -334,5 +336,4 @@ def test_generic_mcp_tools_execute_assembly_and_solve():
             return a.data, sol.data
     system, solution = asyncio.run(scenario())
     assert system["ok"] and solution["ok"] and solution["status"] == "verified"
-
 

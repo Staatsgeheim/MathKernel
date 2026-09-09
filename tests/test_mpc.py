@@ -32,6 +32,7 @@ def run(k,obj,op,arguments=None,**kwargs):
 
 
 def test_numeric_search_exact_promotion_and_solver_free_replay(monkeypatch, isolated_patch):
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     k=MathKernel();src=system(k);before=k.object_get(src).model_dump(mode='json')
     solved=run(k,src,'mpc',params(mode='numeric'))
     assert solved.trust==TrustLevel.EXACT and solved.data['details']['feasibility_certified']
@@ -55,6 +56,7 @@ def test_numeric_search_exact_promotion_and_solver_free_replay(monkeypatch, isol
 
 
 def test_separate_terminal_and_stability_claims():
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     k=MathKernel();src=system(k)
     result=run(k,src,'mpc',params(mode='numeric'))
     terminal=result.data['details']['terminal_analysis']
@@ -74,6 +76,7 @@ def test_separate_terminal_and_stability_claims():
 
 
 def test_plan_tampering_breaks_feasibility_and_plan_optimality():
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     k=MathKernel();src=system(k);solved=run(k,src,'mpc',params(mode='numeric'))
     plan=k.math_objects[solved.data['object_ids']['output']]['value']
     bad=MPCPlan(**{**plan.model_dump(mode='python'),'states':((sp.Integer(2),),(sp.Integer(9),))})
@@ -110,6 +113,7 @@ def test_invalid_certificate_creates_no_plan():
 
 
 def test_numeric_irrational_data_stays_candidate_but_feasibility_is_checked():
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     k=MathKernel();src=system(k,A='sqrt(2)')
     result=run(k,src,'mpc',params(mode='numeric',input_lower=[-10],input_upper=[10],
         state_lower=[-100],state_upper=[100],terminal_lower=[-100],terminal_upper=[100],terminal_gain=None))
@@ -124,6 +128,7 @@ def test_numeric_irrational_data_stays_candidate_but_feasibility_is_checked():
 
 
 def test_mimo_horizon_matches_independent_condensed_solution():
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     k=MathKernel();src=system(k,n=2)
     Q=np.diag([2.,1.]);R=np.array([[3.]]);F=np.diag([4.,2.]);x0=np.array([.3,-.2]);N=3
     result=run(k,src,'mpc',dict(Q=Q.tolist(),R=R.tolist(),terminal=F.tolist(),initial=x0.tolist(),
@@ -181,6 +186,7 @@ def test_resource_limits_and_false_solver_feasibility(monkeypatch):
 @pytest.mark.parametrize('field,value',[('Q',[['1+(1.0-1.0)']]),
     ('input_lower',["-1/2+(1.0-1.0)"]),('initial',["2+(1.0-1.0)"])])
 def test_decimal_cancellation_cannot_promote(field,value):
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     k=MathKernel();src=system(k);result=run(k,src,'mpc',params(**{field:value,'mode':'numeric'}))
     assert result.trust==TrustLevel.NUMERIC
     assert not result.data['details']['feasibility_certified']
@@ -188,6 +194,7 @@ def test_decimal_cancellation_cannot_promote(field,value):
 
 
 def test_decimal_certificate_cannot_promote_or_create_plan():
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     k=MathKernel();src=system(k);solved=run(k,src,'mpc',params(mode='numeric'))
     witness=copy.deepcopy(solved.data['details']['search']['certificate'])
     witness['primal'][0]='2+(1.0-1.0)'
@@ -199,6 +206,7 @@ def test_decimal_certificate_cannot_promote_or_create_plan():
 
 
 def test_outputs_sources_persistence_and_live_mcp(tmp_path):
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     settings=Settings(store_path=str(tmp_path/'mpc.sqlite'));k=MathKernel(settings);src=system(k)
     result=run(k,src,'mpc',params(mode='numeric'));ids=result.data['object_ids']
     for object_id in ids.values():assert src in k.object_get(object_id).data['sources']

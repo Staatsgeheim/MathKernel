@@ -53,6 +53,23 @@ class KernelIntegrationTests(unittest.TestCase):
             with self.assertRaises(KeyError):source.result_page('arbitrary-resource',0)
         finally:self.kernel.settings=old
 
+    def test_verifier_claim_trust_matches_result_through_studio_inspection(self):
+        from mathkernel_studio.source import InspectionRecord
+        for left, right, trust, status in (
+            ('sin(x)^2+cos(x)^2', '1', 'symbolic', 'verified'),
+            ('(x+y)^2', 'x^2+y^2', 'exact', 'refuted'),
+            ('0.7+0.3', '1', 'numeric', 'verified'),
+        ):
+            with self.subTest(left=left):
+                result = self.kernel.prove_equivalence(left, right, formal=False)
+                record = InspectionRecord.from_result(result, result_ref='verification',
+                    source_ref='claim', source_revision='1')
+                payload = json.loads(record.result_json)
+                self.assertEqual(payload['status'], status)
+                self.assertEqual(payload['trust'], trust)
+                self.assertEqual(json.loads(record.claim_trust_json), {'result': trust})
+                self.assertNotIn('lean_certificate', payload['data'])
+
     def test_receipt_admission_requires_matching_original_host_result(self):
         from dataclasses import replace
         from mathkernel.models import MathResult

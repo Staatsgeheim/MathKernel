@@ -161,6 +161,13 @@ def prove_smt(z3eng, ir: Expr, domains: dict[str, str], fragment: dict,
               workers: int | None = None) -> dict:
     """Race the encoding portfolio; first decisive answer wins. Assumptions
     are part of the goal: prove And(assumptions) => ir."""
+    from .reasoning import _walk
+    kinds: set[str] = set()
+    for expression in [ir, *(assumptions or [])]:
+        _walk(expression, set(), set(), kinds)
+    if "real" in kinds:
+        return {"status": "unknown", "reason":
+                "Exact SMT is disabled for approximate decimal inputs or assumptions"}
     if not z3eng.available:
         return {"status": "unavailable", "reason": "z3-solver is not installed"}
     z3 = z3eng.z3
@@ -208,6 +215,8 @@ def _prove_job(job: dict) -> dict:
     ir = parse_math(job["source"])
     eng = Z3Engine()
     fragment = classify_fragment(ir, job["domains"])
-    out = prove_smt(eng, ir, job["domains"], fragment)
+    assumptions = [parse_math(a) for a in job.get("assumptions", [])]
+    out = ({"status": "unknown"} if job.get("uncertain_ancestry") else
+           prove_smt(eng, ir, job["domains"], fragment, assumptions))
     return {"expr_id": job["expr_id"], "status": out["status"],
             "countermodel": out.get("countermodel"), "fragment": fragment}

@@ -9,6 +9,8 @@ from test_engineering_signal import create
 @pytest.mark.parametrize('mode',['exact','numeric'])
 @pytest.mark.parametrize('b,a',[([1],[1,'-1/2']),([1,2,1],[1]),([1,2],[2,1]),([2],[1])])
 def test_chunked_filter_matches_one_shot_and_preserves_all_sources(mode,b,a):
+    if mode == "numeric":
+        pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     k=MathKernel();f=create(k,'Filter',numerator=b,denominator=a,sample_rate=8)
     initial=k.apply(f,'initial_state',{'mode':mode,'unit':'V'})
     assert initial.ok,initial.errors
@@ -35,6 +37,7 @@ def test_chunked_filter_matches_one_shot_and_preserves_all_sources(mode,b,a):
 
 
 def test_sos_streaming_roundtrip_across_restart(tmp_path):
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     settings=Settings(store_path=str(tmp_path/'stream.sqlite'))
     k=MathKernel(settings);d=create(k,'FilterDesign',cutoff=[10],sample_rate=100)
     f=k.apply(d,'design',{'mode':'numeric'}).data['object_id']
@@ -82,6 +85,7 @@ def state(k,**extra):
 @pytest.mark.parametrize('method',['zoh','bilinear'])
 @pytest.mark.parametrize('mode',['exact','numeric'])
 def test_discretization_matches_independent_scipy_and_rational_nilpotent_formula(method,mode):
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     from scipy.signal import cont2discrete
     k=MathKernel();src=state(k)
     result=k.apply(src,'discretize',{'sample_time':'1/10','method':method,'mode':mode})
@@ -159,6 +163,7 @@ def test_feedback_updates_output_feedthrough_and_decimal_ancestry():
 
 
 def test_numeric_mimo_controller_poles_match_requested_polynomial():
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     k=MathKernel();src=state(k,A=[[-1,0],[0,-2]],B=[[1,0],[0,1]],C=[[1,0]],D=[[0,0]])
     result=k.apply(src,'place_poles',{'poles':[-3,-4],'mode':'numeric'})
     assert result.ok,result.errors

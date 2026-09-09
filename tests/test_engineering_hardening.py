@@ -62,6 +62,7 @@ def test_exact_certificate_replay_never_invokes_candidate_subprocess(monkeypatch
 
 
 def test_numeric_lp_riccati_and_pole_search_report_hard_isolation():
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     k = MathKernel()
     problem = create(k, "OptimizationProblem", variables=["x"], c=[-1], upper=[2])
     lp = k.apply(problem, "solve", {"mode": "numeric"})
@@ -90,6 +91,8 @@ def test_native_timeout_is_structured_and_creates_no_derived_object(monkeypatch)
 
 
 def test_conic_and_qcqp_native_search_report_hard_isolation():
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
+    pytest.importorskip("clarabel", reason="Install mathkernel[test] for optional backend coverage")
     k = MathKernel()
     conic = create(k, "ConicProblem", variables=["x"], c=[1], A=[[1]], b=[1],
                    cones=[{"kind": "nonnegative", "dimension": 1}])
@@ -136,6 +139,7 @@ def test_capability_outputs_match_runtime_derived_types():
 
 
 def test_live_mcp_numeric_solver_keeps_isolation_metadata():
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     from fastmcp import Client
     from mathkernel_mcp.server import mcp
     async def run():

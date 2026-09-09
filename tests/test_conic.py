@@ -19,6 +19,8 @@ def psd_definition(offdiagonal=False):
 
 @pytest.mark.parametrize('definition,expected', [(soc_definition(), '5'), (psd_definition(), '1'), (psd_definition(True), '1')])
 def test_cone_search_checked_exact_and_solver_free_replay(definition, expected, monkeypatch, isolated_patch):
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
+    pytest.importorskip("clarabel", reason="Install mathkernel[test] for optional backend coverage")
     import clarabel
     k=MathKernel();p=create(k, 'ConicProblem', **definition)
     before=k.object_get(p).model_dump(mode='json')
@@ -36,6 +38,8 @@ def test_cone_search_checked_exact_and_solver_free_replay(definition, expected, 
 
 
 def test_product_cones_and_equality_multipliers():
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
+    pytest.importorskip("clarabel", reason="Install mathkernel[test] for optional backend coverage")
     k=MathKernel();p=create(k, 'ConicProblem', variables=['t','x'], c=[1,0],
         A=[[-1,0],[0,-1],[0,0],[1,0]],b=[0,0,4,10],A_eq=[[0,1]],b_eq=[3],
         cones=[{'kind':'second_order','dimension':3},{'kind':'nonnegative','dimension':1}])
@@ -73,6 +77,8 @@ def test_bad_witnesses_never_establish_outcomes(kind):
 
 
 def test_rational_dual_bound_for_irrational_optimum():
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
+    pytest.importorskip("clarabel", reason="Install mathkernel[test] for optional backend coverage")
     k=MathKernel();p=create(k,'ConicProblem',**soc_definition(1,1))
     r=k.apply(p,'verify_certificate',{'certificate':{'kind':'bound','cone_dual':[1,'-7/10','-7/10']}})
     assert r.ok and r.trust==TrustLevel.EXACT
@@ -93,6 +99,8 @@ def test_rational_dual_bound_for_irrational_optimum():
     (dict(variables=['x'],c=[1]),dict(kind='unbounded',primal=[0],ray=[-1]),'unbounded'),
 ])
 def test_outcome_witnesses_and_search(definition,certificate,outcome):
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
+    pytest.importorskip("clarabel", reason="Install mathkernel[test] for optional backend coverage")
     k=MathKernel();p=create(k,'ConicProblem',**definition)
     r=k.apply(p,'verify_certificate',{'certificate':certificate})
     assert r.ok and r.data['details']['accepted']
@@ -104,6 +112,8 @@ def test_outcome_witnesses_and_search(definition,certificate,outcome):
 
 
 def test_decimal_inputs_and_witnesses_never_become_exact():
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
+    pytest.importorskip("clarabel", reason="Install mathkernel[test] for optional backend coverage")
     k=MathKernel();definition=soc_definition();definition['b'][1]='3.0'
     p=create(k,'ConicProblem',**definition)
     r=k.apply(p,'solve',{'mode':'numeric'})
@@ -114,6 +124,8 @@ def test_decimal_inputs_and_witnesses_never_become_exact():
 
 
 def test_lp_conversion_preserves_free_variables_bounds_and_maximization():
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
+    pytest.importorskip("clarabel", reason="Install mathkernel[test] for optional backend coverage")
     k=MathKernel();p=create(k,'OptimizationProblem',variables=['x','y'],c=[2,1],A_ub=[[1,1]],b_ub=[3],
                           lower=[None,-1],upper=[2,None],sense='max')
     converted=k.apply(p,'to_conic')
@@ -127,6 +139,8 @@ def test_lp_conversion_preserves_free_variables_bounds_and_maximization():
 
 
 def test_psd_packing_preserves_trace_pairing_and_stationarity():
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
+    pytest.importorskip("clarabel", reason="Install mathkernel[test] for optional backend coverage")
     from mathkernel.conic_search import pack_problem,unpack_dual
     from mathkernel.conic import ConicProblem
     rng=np.random.default_rng(92);d=4;n=3

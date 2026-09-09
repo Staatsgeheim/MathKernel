@@ -701,6 +701,10 @@ class ObligationExecutor:
         run = ObligationExecution(obligation_id=obligation.obligation_id, kind=obligation.kind, action=obligation.action,
                                   state="unknown", engine="lean", trust=TrustLevel.UNKNOWN, depends_on=obligation.depends_on,
                                   assumptions_used=_assumption_text(self.kernel, context))
+        if any(self.kernel._expr_trust(ir) == TrustLevel.NUMERIC for ir in
+               [expr, *([a.expression for a in context.assumptions] if context else [])]):
+            run.result = {"formalized": False, "reason": "Formal proofs are disabled for approximate inputs or assumptions"}
+            return run
         solve_art = artifacts.get(obligation.depends_on[0])
         if not solve_art or not isinstance(solve_art["solution"], sp.FiniteSet):
             run.result = {"formalized": False, "reason": "Formal candidate checking currently supports finite solution sets."}
@@ -710,26 +714,40 @@ class ObligationExecutor:
             run.state = "skipped"; run.error = "Formal solution soundness requires an equality."
             return run
         x = sp.Symbol(solve_art["variable"])
-        certs=[]; all_proved=True; any_supported=False
+        certs=[]; attempts=[]; all_proved=True; any_supported=False
         for candidate in sorted(solve_art["solution"], key=sp.default_sort_key):
             try:
+                residual = sp.simplify((relation.lhs - relation.rhs).subs(x, candidate))
+                if residual.is_zero is False:
+                    attempts.append({"candidate": str(candidate), "status": "refuted",
+                                     "checked": False, "residual": str(residual)})
+                    all_proved=False
+                    continue
                 left_ir=self.kernel.sympy.from_sympy(sp.simplify(relation.lhs.subs(x,candidate)))
                 right_ir=self.kernel.sympy.from_sympy(sp.simplify(relation.rhs.subs(x,candidate)))
                 status, script, tactic, error = self.kernel.lean.prove_equivalence(left_ir, right_ir, [])
                 any_supported=True
-                certs.append({"candidate":str(candidate),"status":status,"tactic":tactic,"certificate":script,"error":error})
-                if status != "proved": all_proved=False
+                entry = {"candidate": str(candidate), "status": status, "tactic": tactic,
+                         "checked": status == "proved", "error": error}
+                if status == "proved":
+                    certs.append({**entry, "certificate": script})
+                else:
+                    attempts.append({**entry, "candidate_script": script})
+                    all_proved=False
             except (ValueError, TypeError) as exc:
-                certs.append({"candidate":str(candidate),"status":"unsupported","error":str(exc)})
+                attempts.append({"candidate":str(candidate),"status":"unsupported","checked":False,"error":str(exc)})
                 all_proved=False
-        run.result={"formalized": any_supported, "candidate_certificates": certs, "all_formally_proved": all_proved and any_supported}
+        run.result={"formalized": bool(certs), "candidate_certificates": certs,
+                    "candidate_attempts": attempts, "all_formally_proved": all_proved and any_supported}
         if all_proved and any_supported:
             run.state="verified"; run.trust=TrustLevel.FORMAL
-            run.evidence.append(EngineEvidence(engine="lean", capability="formal_certificate", status=VerificationStatus.PROVED,
-                                                trust=TrustLevel.FORMAL, detail={"candidate_count":len(certs)}))
-        elif any(c.get("status") == "unavailable" for c in certs):
+            for certificate in certs:
+                run.evidence.append(EngineEvidence(engine="lean", capability="formal_certificate", status=VerificationStatus.PROVED,
+                    trust=TrustLevel.FORMAL, detail={"candidate": certificate["candidate"],
+                                                   "certificate": certificate["certificate"]}))
+        elif any(c.get("status") == "unavailable" for c in attempts):
             run.evidence.append(EngineEvidence(engine="lean", capability="formal_certificate", status="unavailable",
-                                                trust=TrustLevel.UNKNOWN, error="Lean executable not found", detail={"certificates_generated":True}))
+                                                trust=TrustLevel.UNKNOWN, error="Lean/Mathlib is unavailable; use explicit setup", detail={"candidates_generated":True}))
         return run
 
     def _interval_enclose(self, obligation: Obligation, expr: Any) -> ObligationExecution:

@@ -60,6 +60,7 @@ def test_policy_tampering_rejected_by_independent_bellman_checker():
 @pytest.mark.parametrize('horizon',[0,1,5])
 def test_mimo_finite_policy_matches_independently_condensed_qp(horizon):
     # Stack x[0]..x[N], eliminate dynamics once, then minimize the dense quadratic.
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     k=MathKernel(); A=np.array([[1.,.1],[0.,1.]])
     B=np.array([[.1],[1.]])
     src=create(k,'StateSpaceSystem',A=A.tolist(),B=B.tolist(),C=[[1,0]],D=[[0]],time_domain='discrete',sample_time='1/10')
@@ -99,6 +100,7 @@ def test_kalman_feedthrough_timing_exact_and_immutable_branches():
 
 
 def test_kalman_matches_joint_gaussian_conditioning_and_joseph_psd():
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     k=MathKernel(); A=np.array([[1.,.1],[0.,.8]]); B=np.array([[0.],[1.]])
     C=np.array([[1.,.5],[0.,1.]]); D=np.array([[2.],[.3]])
     P=np.array([[2.,.3],[.3,1.]]); V=np.array([[.4,.1],[.1,.7]]); W=.01*np.eye(2)
@@ -146,6 +148,7 @@ def test_lqg_separation_feedthrough_certificates_and_stability(discrete):
 
 
 def test_lqg_bad_witness_and_numeric_search():
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     k=MathKernel(); src=system(k,True,A=1)
     args=dict(Q=[[1]],R=[[1]],W=[[1]],V=[[1]])
     r=run(k,src,'lqg',**args,mode='numeric')
@@ -189,6 +192,8 @@ def test_continuous_lqg_process_noise_rate_units():
 
 @pytest.mark.parametrize('kind',['weight','measurement','certificate','state'])
 def test_decimal_cancellation_ancestry_survives(kind):
+    if kind == 'weight':
+        pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     k=MathKernel(); src=system(k,True,A=1)
     decimal='1+(1.0-1.0)'
     if kind=='weight':

@@ -10,6 +10,8 @@ LP=dict(variables=['x','y'],c=[-3,-2],A_ub=[[1,1],[1,0],[0,1]],b_ub=[4,2,3])
 
 @pytest.mark.parametrize('mode',['exact','numeric'])
 def test_lp_global_optimum_has_original_data_certificate(mode):
+    if mode == "numeric":
+        pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     k=MathKernel();src=create(k,'OptimizationProblem',**LP)
     result=k.apply(src,'solve',{'mode':mode})
     assert result.ok,result.errors
@@ -43,6 +45,7 @@ def test_equality_free_variable_negative_bound_and_maximum_cases():
 
 
 def test_qp_exact_psd_and_numeric_search_certificate():
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     k=MathKernel();src=create(k,'OptimizationProblem',variables=['x','y'],c=[-2,-4],Q=[[2,0],[0,2]])
     result=k.apply(src,'solve',{'mode':'numeric'})
     assert result.ok,result.errors
@@ -68,6 +71,7 @@ def test_stationary_maximum_is_not_certified_as_minimum():
 
 
 def test_decimal_original_problem_and_nested_witness_cannot_launder_trust():
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     k=MathKernel()
     approximate=create(k,'OptimizationProblem',variables=['x'],c=['1.0'])
     result=k.apply(approximate,'solve',{'mode':'numeric'})
@@ -84,6 +88,7 @@ def test_decimal_original_problem_and_nested_witness_cannot_launder_trust():
 
 
 def test_milp_solver_bound_is_not_a_certificate():
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     k=MathKernel();src=create(k,'OptimizationProblem',variables=['x'],c=[-1],upper=['5/2'],integrality=[1])
     r=k.apply(src,'solve',{'mode':'numeric'})
     assert r.ok,r.errors
@@ -96,6 +101,7 @@ def test_milp_solver_bound_is_not_a_certificate():
 
 @pytest.mark.parametrize('definition',[dict(variables=['x'],c=[1],lower=[2],upper=[1]),dict(variables=['x'],c=[-1])])
 def test_solver_outcomes_require_independent_witnesses(definition):
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     k=MathKernel();src=create(k,'OptimizationProblem',**definition)
     r=k.apply(src,'solve',{'mode':'numeric'})
     assert r.ok
@@ -107,6 +113,7 @@ def test_solver_outcomes_require_independent_witnesses(definition):
 
 
 def test_random_bounded_lps_match_vertex_enumeration():
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     rng=np.random.default_rng(431)
     for _ in range(12):
         c=rng.integers(-5,6,2).tolist()

@@ -31,11 +31,19 @@ to adjust `max_steps`/`formal`.
 - `math_counterexample(left, right, context_id)` — searches for a
   falsifying assignment instead of proving.
 
-Approximate inputs: if either side contains a decimal literal, the result
+Approximate inputs: if either side or a required assumption contains a decimal literal, the result
 is capped at `numeric` trust, no Lean certificate is issued (formal backends
 encode decimals as exact rationals — a different statement), and
 `math_counterexample` returns `unknown` with a warning. Rewrite decimals as
 exact rationals (`1/10`, not `0.1`) for proof-grade evidence.
+
+Declined independent verifiers are diagnostics, not required proof dependencies.
+Only checked scripts appear in `lean_certificate`; `lean_candidate` carries
+`checked: false` and proves nothing. Already-refuted statements skip Lean and
+contain neither artifact. Lean installation requires explicit operator setup
+with `mathkernel-lean-setup`; ordinary calls never download a toolchain.
+Solution reasoning likewise keeps only checked scripts in `candidate_certificates`;
+unchecked work appears in `candidate_attempts` with `checked: false`.
 
 ## Verified code generation
 

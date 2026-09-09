@@ -1,0 +1,33 @@
+name: Lean qualification
+
+# Installing several GiB is an explicit operator action, never a push/PR side effect.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lean:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    env:
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      MATHKERNEL_LEAN_CACHE: /tmp/mathkernel-lean
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Python test dependencies
+        run: python -m pip install ".[mcp,dev]"
+      - name: Explicitly provision and check pinned Lean and Mathlib
+        run: |
+          mathkernel-lean-setup --timeout 2700
+          mathkernel-lean-setup --check
+      - name: Verify proofs, evidence binding and certificate replay
+        env:
+          MATHKERNEL_SKIP_LEAN_INSTALL: "1"
+        run: python -m pytest -q -ra tests/test_prove.py tests/test_kernel.py tests/test_obligations_and_intervals.py tests/test_verifier_trust_regressions.py

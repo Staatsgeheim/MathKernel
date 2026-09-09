@@ -23,7 +23,7 @@ jobs:
       OPENBLAS_NUM_THREADS: "1"
       OMP_NUM_THREADS: "1"
       MKL_NUM_THREADS: "1"
-      MATHKERNEL_SKIP_LEAN_INSTALL: "0"
+      MATHKERNEL_SKIP_LEAN_INSTALL: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -33,9 +33,30 @@ jobs:
       - name: Install test dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install ".[mcp,dev,perf,latex,viz,sci,conic,certified]"
+          python -m pip install ".[test]"
       - name: Run test suite
         run: python -m pytest -q
+
+  minimal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      MATHKERNEL_SKIP_LEAN_INSTALL: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install core, transport and test runner only
+        run: python -m pip install ".[mcp,dev]"
+      - name: Check minimal dependency boundary
+        run: python -c "import importlib.util; assert all(importlib.util.find_spec(m) is None for m in ('scipy', 'clarabel', 'flint', 'numba'))"
+      - name: Run core tests and explicit optional-backend skips
+        run: python -m pytest -q -ra
 
   package:
     runs-on: ubuntu-latest
@@ -53,7 +74,7 @@ jobs:
           python -m twine check dist/*
       - name: Smoke-test wheel
         env:
-          MATHKERNEL_SKIP_LEAN_INSTALL: "0"
+          MATHKERNEL_SKIP_LEAN_INSTALL: "1"
         run: |
           python -m venv /tmp/mathkernel-wheel
           /tmp/mathkernel-wheel/bin/pip install dist/*.whl

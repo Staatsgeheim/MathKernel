@@ -6,10 +6,14 @@
 
 Mathematical results carry an explicit **trust level**, an **engine** tag, and a **derivation trail**. Exact computation, checked certificates, symbolic results, certified enclosures, empirical evidence, and formal proofs are distinct claims. Exact arithmetic alone is not a formal proof; approximate-input ancestry must not silently disappear.
 
-[![version](https://img.shields.io/badge/version-1.3.0-blue)]()
+[![version](https://img.shields.io/badge/version-1.3.1.dev1-blue)]()
 [![python](https://img.shields.io/badge/python-%3E%3D3.11-blue)]()
 [![engines](https://img.shields.io/badge/engines-sympy%20%C2%B7%20z3%20%C2%B7%20lean%20%C2%B7%20numba%20%C2%B7%20cuda-orange)]()
 [![license](https://img.shields.io/badge/license-MIT-lightgrey)]()
+
+The current development line is **Beta**. Optional engines and Studio have
+separate availability and validation boundaries; the package classification does
+not certify every backend, platform, or mathematical claim.
 
 ---
 
@@ -263,9 +267,27 @@ pip install -e '.[latex]'   # antlr4 runtime for math_parse_latex
 pip install -e '.[dev]'     # pytest
 ```
 
-Lean 4 + Mathlib is installed by default on first `mathkernel-mcp` start and
-via `mathkernel-lean-setup` (`elan` + a pinned lake workspace). Skip with
-`MATHKERNEL_SKIP_LEAN_INSTALL=1` (CI/wheel smoke).
+Lean 4 + Mathlib is optional and requires explicit operator setup. MCP startup,
+capability discovery and proof calls never download or repair a toolchain.
+Without a healthy local installation, formal checks report `unavailable`.
+
+```bash
+mathkernel-lean-setup --check   # local version, runtime and Mathlib proof check
+mathkernel-lean-setup           # explicitly download the pinned toolchain
+mathkernel-lean-setup --repair  # stage and verify a fresh managed installation
+```
+
+Setup requires Git, allows one hour by default (`--timeout`), and checks for
+8 GiB free in `MATHKERNEL_LEAN_CACHE` before downloading (`--min-free-gib`).
+This is a preflight check, not a disk quota; installation uses several GiB.
+Failed setup removes its partial generation, and interrupted setup is cleaned on
+the next setup invocation. Repair preserves the active generation until the new
+one passes a real Lean/Mathlib proof check. A failed binary-cache download stops
+unless `--build-from-source` was explicitly selected. Custom Lean paths are
+read-only to this installer; repair those with their own installation manager.
+`MATHKERNEL_LEAN_BINARY` must point to a real installed Lean binary, not an elan
+proxy. `MATHKERNEL_SKIP_LEAN_INSTALL=1` additionally blocks explicit setup unless
+`--force`/`--repair` is supplied; setting it to `0` does not enable automatic setup.
 
 > **GPU note:** CuPy wheels ship no CUDA libraries. The `cuda` extra installs the
 > matching `nvidia-*-cu12` pip packages — without them, cuBLAS/NVRTC DLL loads fail
@@ -349,8 +371,11 @@ empirical / heuristic / unknown
 ```
 
 **Overall trust is limited by the weakest evidence required to establish the claimed
-result** — never the maximum trust emitted by any single node. Independent backend
-disagreement is preserved as an explicit conflict, not averaged away.
+result**. Required dependencies within a support path are conjunctive; independent
+paths can establish the same conclusion at different strengths. Declined verifier
+attempts remain diagnostics and cannot lower a successful independent result.
+Unknown required dependencies still limit trust. Counterexamples take precedence
+over successful proof attempts; the conflicting attempts remain visible.
 
 Every `MathResult` also carries an `evidence_bundle` with separate computation,
 proof, certificate, numerical, model and empirical evidence. `claim_evidence`
@@ -359,6 +384,13 @@ score. The legacy `trust` field remains a conservative summary and is automatica
 capped by the evidence required for the result. A producer-supplied
 `justified_trust` is a ceiling, never an override; an unverified proof or certificate
 supports only `unknown`.
+
+`prove_equivalence` emits `data.lean_certificate` only after Lean accepts the script,
+with a matching verified proof record. Unchecked scripts, when retained for an
+unrefuted statement, appear only under `data.lean_candidate` with `checked: false`.
+Already-refuted statements skip Lean and contain neither artifact.
+Solution reasoning follows the same rule: `candidate_certificates` contains only
+checked scripts; unchecked work is separated into `candidate_attempts`.
 
 Semantic statuses distinguish proof or certification strength from mathematical
 outcomes such as `does_not_exist`, `undefined`, `infeasible` and `unsupported`.
@@ -378,7 +410,7 @@ vectorized numeric path (CuPy GPU when usable) and downgrades trust to `numeric`
 **Decimal literals are approximate observations.** A decimal (`RealNode`) anywhere in
 an expression caps its trust at `numeric` from `parse` onward — `0.1 + x` parses as
 `numeric`, `1/2 + x` as `symbolic`. Formal certificates (Lean) and exact SMT
-counterexamples are refused for approximate inputs, because the backends would encode
+proofs and counterexamples are refused for approximate inputs or assumptions, because the backends would encode
 decimal syntax as exact rationals — silently proving a different statement. Use exact
 rationals or interval certification when proof-grade evidence is needed.
 
@@ -988,7 +1020,7 @@ All settings are environment-driven with the `MATHKERNEL_` prefix
 | `MATHKERNEL_YOLO_MODE` | **false** | unlocks `math_yolo_settings` to mutate live `MATHKERNEL_*` settings (typed coerce; default off) |
 | `MATHKERNEL_Z3_TIMEOUT_MS` | 10000 | SMT budget (set on every Z3 solver instance) |
 | `MATHKERNEL_LEAN_BINARY` / `MATHKERNEL_LEAN_TIMEOUT_SECONDS` | `lean` / 90 | Lean adapter (timeout passed to every `lake env lean` check) |
-| `MATHKERNEL_SKIP_LEAN_INSTALL` | unset | skip the default Lean 4 + Mathlib download |
+| `MATHKERNEL_SKIP_LEAN_INSTALL` | unset | block explicit setup unless forced; ordinary calls never install |
 | `MATHKERNEL_LEAN_CACHE` | platform cache | elan + lake workspace root |
 | `MATHKERNEL_ENABLE_PARALLEL` / `MATHKERNEL_MAX_WORKERS` | true / cpu_count | process & thread pools |
 | `MATHKERNEL_MAX_ITERATIONS` | 10000 | iteration cap for simplex / Nelder-Mead |
@@ -1114,14 +1146,29 @@ high-dimensional reduction or acoustic extraction rather than hidden flattening.
 
 ## Testing
 
-Run the complete source-tree suite with the optional dependencies required by the domains you want to validate:
+For the core and MCP suite, optional scientific/JIT tests skip with an explicit
+dependency reason. Exact tests and tests of unavailable-backend behavior still run:
 
 ```bash
-PYTHONPATH=src:. python -m pytest -q
-python scripts/gpu_smoke.py
+pip install -e '.[mcp,dev]'
+python -m pytest -q -ra
 ```
 
-The repository degrades unavailable optional engines to `unknown` or `unavailable` rather than fabricating success. FastMCP is required for MCP registration tests, `z3-solver` for SMT/proving/quantifier-elimination tests, and the compatible ANTLR runtime for SymPy LaTeX parsing. Domain-specific test modules and experiment runners can be executed independently when validating a particular mathematical surface.
+For the full CPU dependency matrix (SciPy, Clarabel, python-flint, Numba, ANTLR,
+Matplotlib, FastMCP and pytest):
+
+```bash
+pip install -e '.[test]'
+python -m pytest -q -ra
+```
+
+Lean and GPU validation require separately provisioned toolchains/hardware.
+Install Lean explicitly with `mathkernel-lean-setup`, check it with `--check`,
+then run `python -m pytest -q tests/test_prove.py tests/test_obligations_and_intervals.py`.
+For CUDA, install `.[cuda]` and run `python scripts/gpu_smoke.py`. Ordinary tests
+never install Lean. Missing optional modules produce explicit skips. The separate
+**Lean qualification** GitHub Actions workflow is manually dispatched and installs
+the pinned toolchain before running the proof and replay tests.
 
 Coverage includes parser and ambiguity handling, symbolic algebra and calculus, exact integer and finite-field arithmetic, graph algorithms, linear algebra, Numba/CUDA differential paths, asynchronous jobs, code generation and checking, GF(2) and finite Fourier methods, Koopman/finite dynamics, PRNG analysis, typed engineering mathematics, geometry/topology, statistics and stochastic systems, PDE/FEM/adaptivity, evidence propagation, persistence integrity, visualization, sonification, multimodal artifacts and the MCP tool surface.
 

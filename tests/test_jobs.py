@@ -55,6 +55,7 @@ def test_collatz_job_lifecycle(kernel):
 
 
 def test_cuboid_job_lifecycle(kernel):
+    pytest.importorskip("numba", reason="Install mathkernel[test] for optional backend coverage")
     submitted = kernel.job_submit("cuboid_sweep", {"bound": 50, "engine": "numba"})
     assert submitted.ok
     job_id = submitted.data["job_id"]

@@ -18,6 +18,7 @@ def weights(op,q=1):return {'Q':[[q]],'R':[[1]]} if op=='lqr' else {'W':[[q]],'V
 @pytest.mark.parametrize('op',['lqr','kalman'])
 @pytest.mark.parametrize('discrete',[False,True])
 def test_exact_search_and_solver_free_replay(op,discrete,monkeypatch,isolated_patch):
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     from scipy import linalg
     k=MathKernel();src=system(k,discrete,A=int(discrete),D=2)
     before=k.object_get(src).model_dump(mode='json');args=weights(op,'1/2' if discrete else 1)
@@ -66,6 +67,7 @@ def test_zero_cost_unstable_root_rejected_and_stabilizing_scope_explicit():
 @pytest.mark.parametrize('op',['lqr','kalman'])
 @pytest.mark.parametrize('stored',[False,True])
 def test_decimal_certificate_cancellation_cannot_promote(op,stored):
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     k=MathKernel();src=system(k)
     cert={'P':[['1+(1.0-1.0)']]}
     params={'certificate_id':create(k,'RiccatiCertificate',**cert)} if stored else {'certificate':cert}
@@ -78,6 +80,7 @@ def test_decimal_certificate_cancellation_cannot_promote(op,stored):
 @pytest.mark.parametrize('op',['lqr','kalman'])
 @pytest.mark.parametrize('discrete',[False,True])
 def test_irrational_solution_numerical_and_lyapunov_covariance_identity(op,discrete):
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     k=MathKernel();src=system(k,discrete,A=1)
     result=k.apply(src,op,{**weights(op),'mode':'numeric'})
     assert result.ok,result.errors
@@ -90,6 +93,7 @@ def test_irrational_solution_numerical_and_lyapunov_covariance_identity(op,discr
 
 
 def test_mimo_care_and_dare_against_finite_horizon_iteration():
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     from scipy.linalg import expm,solve_continuous_lyapunov
     for discrete in (False,True):
         k=MathKernel();A=np.array([[.3,.1],[0,.2]]) if discrete else np.array([[-1.,.2],[0,-2.]])
@@ -122,6 +126,7 @@ def test_resource_and_invalid_dimensions_and_noise():
 
 @pytest.mark.parametrize('op',['lqr','kalman'])
 def test_synthesis_persistence_sources_and_live_mcp(tmp_path,op):
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     settings=Settings(store_path=str(tmp_path/'riccati.sqlite'));k=MathKernel(settings);src=system(k)
     r=k.apply(src,op,{**weights(op),'mode':'numeric'});restart=MathKernel(settings)
     cert=r.data['object_ids']['certificate']

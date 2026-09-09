@@ -10,6 +10,7 @@ def ball(c=-1, radius_squared=1):
 
 
 def test_numeric_convex_constraint_search_and_replay():
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     k=MathKernel();p=create(k,'QCQP',**ball())
     result=k.apply(p,'solve',{'mode':'numeric'})
     assert result.ok,result.errors
@@ -38,6 +39,7 @@ def test_global_lagrangian_witnesses_include_nonconvex_and_singular_cases(defini
 
 
 def test_nonconvex_stationary_point_never_certifies_as_minimum():
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     k=MathKernel();p=create(k,'QCQP',**{**ball(0),'Q':[[-2]]})
     result=k.apply(p,'verify_certificate',{'certificate':{'primal':[0],'quadratic_dual':[0]}})
     assert result.ok and not result.data['details']['accepted']
@@ -66,6 +68,7 @@ def test_tampered_quadratic_witness(mutation):
 
 
 def test_irrational_optimum_is_numerical_and_decimal_problem_cannot_be_promoted():
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     k=MathKernel();p=create(k,'QCQP',**ball(radius_squared=2))
     r=k.apply(p,'solve',{'mode':'numeric'})
     assert r.ok and not r.data['details']['accepted']
@@ -76,6 +79,7 @@ def test_irrational_optimum_is_numerical_and_decimal_problem_cannot_be_promoted(
 
 
 def test_random_one_dimensional_balls_match_analytic_endpoint_optima():
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     rng=np.random.default_rng(712)
     for _ in range(8):
         coefficient=int(rng.choice([-4,-3,-2,-1,1,2,3,4]));radius=int(rng.integers(1,5))

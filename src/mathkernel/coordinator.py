@@ -23,6 +23,10 @@ class VerificationCoordinator:
     def equivalence(self, left: Expr, right: Expr, context: MathContext | None = None,
                     formal: bool = True) -> tuple[VerificationStatus, TrustLevel, list[EngineEvidence], dict]:
         assumptions, domains = self._assumptions(context)
+        kinds: set[str] = set()
+        for expression in [left, right, *assumptions]:
+            _scan_ir(expression, set(), set(), kinds)
+        approximate = "real" in kinds
         evidence: list[EngineEvidence] = []
         detail: dict = {}
 
@@ -36,11 +40,17 @@ class VerificationCoordinator:
         yes, diff = sym.prove_equivalence(left, right, env)
         evidence.append(EngineEvidence(engine="sympy", capability="symbolic_equivalence",
             status=VerificationStatus.PROVED if yes else VerificationStatus.UNKNOWN,
-            trust=TrustLevel.SYMBOLIC, detail={"difference": str(diff)}))
+            trust=(TrustLevel.NUMERIC if approximate else TrustLevel.SYMBOLIC) if yes else TrustLevel.UNKNOWN,
+            detail={"difference": str(diff)}))
         detail["symbolic_difference"] = str(diff)
 
         z3: Z3Engine = self.router.engine("z3")  # type: ignore[assignment]
-        if z3.available:
+        if approximate:
+            evidence.append(EngineEvidence(engine="z3", capability="counterexample",
+                status=VerificationStatus.UNKNOWN, role="diagnostic",
+                detail={"unsupported_fragment": True},
+                error="Exact SMT is disabled for approximate decimal inputs or assumptions"))
+        elif z3.available:
             try:
                 status, model = z3.counterexample_equivalence(left, right, assumptions, domains)
                 zs = VerificationStatus(status)
@@ -56,34 +66,46 @@ class VerificationCoordinator:
                 trust=TrustLevel.UNKNOWN, error="z3-solver is not installed"))
 
         lean: LeanEngine = self.router.engine("lean")  # type: ignore[assignment]
-        if formal:
+        refuted = any(e.status == VerificationStatus.DISPROVED for e in evidence)
+        if formal and not approximate and not refuted:
             try:
                 ls, script, tactic, error = lean.prove_equivalence(left, right, assumptions)
-                detail["lean_certificate"] = script
-                detail["lean_tactic"] = tactic
                 capability=f"formal_{tactic}"
                 if ls == "proved":
+                    detail["lean_certificate"] = script
+                    detail["lean_tactic"] = tactic
                     evidence.append(EngineEvidence(engine="lean", capability=capability,
-                        status=VerificationStatus.PROVED, trust=TrustLevel.FORMAL, detail={"tactic": tactic}))
+                        status=VerificationStatus.PROVED, trust=TrustLevel.FORMAL,
+                        detail={"tactic": tactic, "certificate": script}))
                 elif ls == "unavailable":
                     evidence.append(EngineEvidence(engine="lean", capability=capability,
                         status="unavailable", trust=TrustLevel.UNKNOWN, error=error,
-                        detail={"certificate_generated": True, "tactic": tactic}))
+                        detail={"candidate_generated": True, "checked": False, "tactic": tactic}))
                 else:
                     evidence.append(EngineEvidence(engine="lean", capability=capability,
                         status="error", trust=TrustLevel.UNKNOWN, error=error,
-                        detail={"certificate_generated": True, "tactic": tactic}))
+                        detail={"candidate_generated": True, "checked": False, "tactic": tactic}))
+                if ls != "proved":
+                    detail["lean_candidate"] = {"script": script, "tactic": tactic,
+                                                "checked": False, "status": ls}
             except (TypeError, ValueError) as exc:
                 evidence.append(EngineEvidence(engine="lean", capability="formal_certificate",
                     status=VerificationStatus.UNKNOWN, trust=TrustLevel.UNKNOWN,
                     detail={"unsupported_fragment": True}, error=str(exc)))
 
-        if any(e.status == VerificationStatus.DISPROVED for e in evidence):
+        # A declined attempt is diagnostic. Successful independent verifiers
+        # support alternative paths; only evidence for the selected conclusion
+        # may establish it (a proof of P cannot strengthen a refutation of P).
+        conclusion = VerificationStatus.DISPROVED if refuted else VerificationStatus.PROVED
+        for record in evidence:
+            record.role = "required" if record.status == conclusion else "diagnostic"
+            record.support_path = f"verifier:{record.engine}"
+        if refuted:
             return VerificationStatus.DISPROVED, TrustLevel.EXACT, evidence, detail
         if any(e.engine == "lean" and e.status == VerificationStatus.PROVED for e in evidence):
             return VerificationStatus.PROVED, TrustLevel.FORMAL, evidence, detail
         if any(e.engine == "z3" and e.status == VerificationStatus.PROVED for e in evidence):
             return VerificationStatus.PROVED, TrustLevel.EXACT, evidence, detail
         if any(e.engine == "sympy" and e.status == VerificationStatus.PROVED for e in evidence):
-            return VerificationStatus.PROVED, TrustLevel.SYMBOLIC, evidence, detail
+            return VerificationStatus.PROVED, TrustLevel.NUMERIC if approximate else TrustLevel.SYMBOLIC, evidence, detail
         return VerificationStatus.UNKNOWN, TrustLevel.UNKNOWN, evidence, detail

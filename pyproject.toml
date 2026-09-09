@@ -13,7 +13,7 @@ license-files = ["LICENSE"]
 authors = [{name = "Maarten Boone"}]
 keywords = ["mathematics", "symbolic", "verification", "mcp", "llm"]
 classifiers = [
-  "Development Status :: 5 - Production/Stable",
+  "Development Status :: 4 - Beta",
   "Intended Audience :: Developers",
   "Intended Audience :: Science/Research",
   "Programming Language :: Python :: 3",
@@ -36,6 +36,12 @@ dependencies = [
 [project.optional-dependencies]
 mcp = ["fastmcp>=3,<4"]
 dev = ["pytest>=8"]
+# Complete CPU test suite. Lean setup and CUDA hardware remain explicit.
+test = [
+  "pytest>=8", "fastmcp>=3,<4", "numba>=0.59",
+  "antlr4-python3-runtime==4.11", "matplotlib>=3.8",
+  "scipy>=1.11", "clarabel>=0.11,<1", "python-flint>=0.6",
+]
 perf = ["numba>=0.59"]
 cuda = [
   "cupy-cuda12x>=13.0",

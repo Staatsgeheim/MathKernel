@@ -61,6 +61,7 @@ def test_composite_scores_are_centered_and_whitened() -> None:
 
 
 def test_nominal_composite_test_matches_score_norm() -> None:
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     geometry = score_subspace_geometry(
         np.full(4, 0.25), _two_bit_channel(), _two_bit_scores()
     )
@@ -74,6 +75,7 @@ def test_nominal_composite_test_matches_score_norm() -> None:
 
 
 def test_empirical_and_hac_tests_return_valid_results() -> None:
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     rng = np.random.default_rng(7)
     geometry = score_subspace_geometry(
         np.full(4, 0.25), _two_bit_channel(), _two_bit_scores()
@@ -89,6 +91,7 @@ def test_empirical_and_hac_tests_return_valid_results() -> None:
 
 
 def test_composite_bound_is_finite_and_brackets_worst_direction_scale() -> None:
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     geometry = score_subspace_geometry(
         np.full(4, 0.25), _two_bit_channel(), _two_bit_scores()
     )
@@ -111,6 +114,7 @@ def test_composite_bound_detects_blind_direction() -> None:
 
 
 def test_dimension_aware_bound_increases_with_extra_visible_dimension() -> None:
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     p = np.full(4, 0.25)
     full = score_subspace_geometry(p, _two_bit_channel(), _two_bit_scores())
     single = score_subspace_geometry(p, _two_bit_channel(), _two_bit_scores()[:, :1])

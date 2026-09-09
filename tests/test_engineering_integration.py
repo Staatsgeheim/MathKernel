@@ -6,6 +6,7 @@ from test_engineering_signal import create
 
 
 def test_all_engineering_models_roundtrip_replay_and_preserve_source_nodes(tmp_path):
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     settings=Settings(store_path=str(tmp_path/'state.sqlite'))
     k=MathKernel(settings)
     cases=[

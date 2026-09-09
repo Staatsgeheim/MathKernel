@@ -112,6 +112,7 @@ def test_adf_stationarity_diagnostic_is_explicitly_asymptotic():
     ("arima", 1, 1, 0), ("arima", 0, 1, 0),
 ])
 def test_ar_ma_arma_arima_models_fit_verify_and_forecast(family, p, d, q):
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     kernel = MathKernel(); _, _, model_id = make_model(kernel, family, p, d, q)
     assert kernel.apply(model_id, "verify").status == "verified"
     fitted = kernel.apply(model_id, "fit", {"max_iterations": 300, "tolerance": 1e-9})
@@ -130,6 +131,7 @@ def test_ar_ma_arma_arima_models_fit_verify_and_forecast(family, p, d, q):
 
 
 def test_garch_fit_enforces_positive_stationary_variance_and_forecasts():
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     rng = np.random.default_rng(20260904)
     values = []; variance = 1.0; residual = 0.0
     for _ in range(240):
@@ -162,6 +164,7 @@ def test_model_family_order_contract_is_strict(definition):
 
 
 def test_model_and_forecast_evidence_make_no_validity_or_coverage_claim():
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     kernel = MathKernel(); _, _, model_id = make_model(kernel)
     fitted = kernel.apply(model_id, "fit")
     assert fitted.data["details"]["model_validity"] == "not_established"
@@ -187,6 +190,7 @@ def test_time_series_limits_preflight_without_output_objects():
 
 
 def test_invalid_fit_and_forecast_parameters_create_no_outputs():
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     kernel = MathKernel(); _, _, model_id = make_model(kernel)
     before = len(kernel.math_objects)
     refused = kernel.apply(model_id, "fit", {"max_iterations": 0})
@@ -198,6 +202,7 @@ def test_invalid_fit_and_forecast_parameters_create_no_outputs():
 
 
 def test_derived_time_series_objects_are_output_only_and_persistent(tmp_path):
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
     settings = Settings(store_path=str(tmp_path / "time-series.sqlite"))
     kernel = MathKernel(settings); _, _, model_id = make_model(kernel)
     dataset_id = kernel.math_objects[model_id]["value"].dataset_id

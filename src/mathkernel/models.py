@@ -282,6 +282,10 @@ class EngineEvidence(BaseModel):
     trust: TrustLevel = TrustLevel.UNKNOWN
     detail: dict = Field(default_factory=dict)
     error: str | None = None
+    # Defaults preserve conjunctive legacy dependencies. Independent verifier
+    # attempts must explicitly declare their role and alternative support path.
+    role: Literal["required", "cross_check", "diagnostic"] = "required"
+    support_path: str = "primary"
 
 
 def _legacy_evidence_bundle(
@@ -292,15 +296,17 @@ def _legacy_evidence_bundle(
     """Project legacy engine records without strengthening their claims."""
     bundle = EvidenceBundle()
     for record in records:
-        if record.status in {"unavailable", "error"}:
-            continue
+        level = (TrustLevel.UNKNOWN if record.status in
+                 {VerificationStatus.UNKNOWN, "unavailable", "error"} else record.trust)
         bundle.computation.append(ComputationEvidence(
             engine=record.engine,
             method=record.capability,
-            arithmetic=record.trust.value,
+            arithmetic=level.value,
             deterministic=bool(record.detail.get("deterministic", True)),
-            trust=record.trust.value,
+            trust=level.value,
             metadata=dict(record.detail),
+            role=record.role,
+            support_path=record.support_path,
         ))
         if record.status == VerificationStatus.PROVED:
             bundle.proof.append(ProofEvidence(
@@ -313,6 +319,8 @@ def _legacy_evidence_bundle(
                 side_conditions=list(side_conditions or []),
                 verified=True,
                 trust=record.trust.value,
+                role=record.role,
+                support_path=record.support_path,
             ))
     return bundle
 
@@ -467,28 +475,8 @@ class MathResult(BaseModel):
                     trust=self.trust,
                 )
             ]
-            for record in records:
-                if record.status in {"unavailable", "error"}:
-                    continue
-                self.evidence_bundle.computation.append(ComputationEvidence(
-                    engine=record.engine,
-                    method=record.capability,
-                    arithmetic=record.trust.value,
-                    deterministic=bool(record.detail.get("deterministic", True)),
-                    trust=record.trust.value,
-                    metadata=dict(record.detail),
-                ))
-                if record.status == VerificationStatus.PROVED:
-                    self.evidence_bundle.proof.append(ProofEvidence(
-                        proposition=str(record.detail.get("proposition", record.capability)),
-                        method=record.capability,
-                        engine=record.engine,
-                        certificate=record.detail.get("certificate"),
-                        assumptions=list(self.assumptions_used),
-                        side_conditions=list(self.side_conditions),
-                        verified=True,
-                        trust=record.trust.value,
-                    ))
+            self.evidence_bundle = _legacy_evidence_bundle(
+                records, self.assumptions_used, self.side_conditions)
         if self.evidence_bundle.is_empty() and "result" in self.claim_evidence:
             self.evidence_bundle = self.claim_evidence["result"].model_copy(deep=True)
         if not self.claim_evidence and not self.evidence_bundle.is_empty():

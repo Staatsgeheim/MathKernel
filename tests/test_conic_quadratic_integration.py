@@ -12,6 +12,9 @@ from test_quadratic_optimization import ball
 
 @pytest.mark.parametrize('typ,definition',[('ConicProblem',psd_definition()),('QCQP',ball())])
 def test_new_models_and_witnesses_roundtrip_and_keep_original_ancestry(tmp_path,typ,definition):
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
+    if typ == 'ConicProblem':
+        pytest.importorskip("clarabel", reason="Install mathkernel[test] for optional backend coverage")
     settings=Settings(store_path=str(tmp_path/'conic.sqlite'))
     k=MathKernel(settings);p=create(k,typ,**definition)
     before=k.object_get(p).model_dump(mode='json')
@@ -30,6 +33,8 @@ def test_new_models_and_witnesses_roundtrip_and_keep_original_ancestry(tmp_path,
 
 
 def test_decimal_original_and_derived_witness_stay_numeric_after_restart(tmp_path):
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
+    pytest.importorskip("clarabel", reason="Install mathkernel[test] for optional backend coverage")
     settings=Settings(store_path=str(tmp_path/'decimal.sqlite'))
     k=MathKernel(settings);definition=psd_definition();definition['b'][1]='1.0';definition['b'][2]='1.0'
     p=create(k,'ConicProblem',**definition);r=k.apply(p,'solve',{'mode':'numeric'})
@@ -77,6 +82,8 @@ def test_fake_conic_solver_flags_are_not_proofs(monkeypatch):
 
 
 def test_live_mcp_conic_and_quadratic_workflows():
+    pytest.importorskip("scipy", reason="Install mathkernel[test] for optional backend coverage")
+    pytest.importorskip("clarabel", reason="Install mathkernel[test] for optional backend coverage")
     from fastmcp import Client
     from mathkernel_mcp.server import mcp
     async def go():
