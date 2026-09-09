@@ -36,3 +36,10 @@ With `MATHKERNEL_STORE_PATH` set, proved certificates return
 `data.certificate_id`; re-check later with `math_prove_replay` (formal trust
 on successful replay). `math_prove_batch` runs the SMT tier across the
 process pool.
+
+## External projects
+
+Use `math_formal_project_audit` only for operator-allowlisted frozen source trees;
+it returns UNKNOWN source evidence. `math_formal_project_probe` emits an unexecuted
+diagnostic. There is no MCP replay/install/authorize tool. See
+[formal-project-audit.md](formal-project-audit.md).

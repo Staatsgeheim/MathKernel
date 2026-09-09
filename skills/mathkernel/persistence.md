@@ -22,10 +22,13 @@ capped by `max_steps` and scheduled after static ones in discovery order.
 
 ## Certified ball arithmetic
 
-`kernel.certified_enclose(expr_id, "x", "0", "1")` uses Arb balls when
-`python-flint` is installed (the `certified` extra), falling back to
-`mpmath.iv`. Both are `interval_certified`. `capabilities()["certified"]`
-reports which engine is active.
+`kernel.certified_enclose(expr_id, "x", "0", "1")` evaluates MathIR directly
+in a private `mpmath.iv` context. Coefficients and endpoint expressions are
+outward-rounded intervals, not pre-rounded point floats. Exact syntax permits
+`interval_certified`; decimal/approximate ancestry remains `numeric`. Domain
+singularities, unsupported expressions and unresolved endpoint order fail closed.
+The separate optional Arb utilities remain available; this entry point does not
+use a SymPy-to-Arb callable.
 
 ## Lean coverage and replay
 

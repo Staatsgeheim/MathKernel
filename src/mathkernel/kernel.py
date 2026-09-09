@@ -413,6 +413,18 @@ class MathKernel:
             ),
         ):
             self.router.registry.register(capability)
+        for operation, output_type, schema in (
+            ("formal_project_audit", "FormalAuditReport", {"root": "string", "spec": "object?", "limits": "object?"}),
+            ("formal_project_probe", "UnexecutedLeanDiagnostic", {"spec": "object"}),
+        ):
+            self.router.registry.register(Capability(
+                name="formal_project." + operation, domain="formal_project",
+                operation=operation, input_types=("FormalProjectSpec",),
+                output_types=(output_type,), engines=("formal_audit",),
+                evidence=("unknown", "lexical_source_inspection"),
+                handler="kernel:" + operation, parameter_schema=schema,
+                description="Read-only inspection / unexecuted diagnostic. Never proof evidence; replay is operator-only.",
+            ))
         complex_result_types = {
             "argument_principle": "ArgumentPrincipleResult",
             "analytic_continuation": "AnalyticContinuationResult",
@@ -984,6 +996,7 @@ class MathKernel:
             "capability_registry": self.router.registry.manifest(),
             "operations": ["parse", "parse_latex", "get", "substitute", "analyze", "infer_structure",
                            "object_create", "object_get", "apply", "capability_query", "result_resource_get",
+                           "formal_project_audit", "formal_project_probe",
                            "plan", "plan_get", "execute_plan", "reason", "execution_get",
                            "simplify", "solve", "solve_system",
                            "differentiate", "integrate", "limit", "series", "summation", "product",
@@ -3893,36 +3906,29 @@ class MathKernel:
                           data=out, engine="fuzz")
 
     def certified_enclose(self, expr_id: str, variable: str, lo: str, hi: str) -> MathResult:
-        """Interval enclosure of a univariate expression over [lo, hi] using
-        Arb ball arithmetic when python-flint is installed (certified extra),
-        else mpmath.iv. interval_certified trust."""
-        from .certified import arb_available, interval_enclosure
+        """Outward-rounded MathIR interval evaluation with a private mpmath.iv context.
+
+        Coefficients and endpoint expressions stay in interval arithmetic.
+        Approximate source literals/bounds retain NUMERIC ancestry.
+        """
+        from .certified import mathir_interval_enclosure
+        from .parser import parse_math
         ir = self.expressions.get(expr_id)
         if ir is None:
-            return MathResult(ok=False, status="error",
+            return MathResult(ok=False, status="error", trust=TrustLevel.UNKNOWN,
                               errors=[f"Unknown expr_id: {expr_id}"], engine="certified")
         try:
-            lo_s, hi_s = self._numeric_bound(lo), self._numeric_bound(hi)
-        except (ValueError, TypeError) as exc:
-            return MathResult(ok=False, status="error", errors=[str(exc)], engine="certified")
-        import sympy as sp
-        sym = self.sympy.to_sympy(ir, {variable: sp.Symbol(variable)})
-        if arb_available():
-            try:
-                f = sp.lambdify(sp.Symbol(variable), sym, modules="flint")
-            except (KeyError, NameError, TypeError):
-                f = None
-            if f is not None:
-                out = interval_enclosure(f, lo_s, hi_s)
-                if out is not None:
-                    return MathResult(ok=True, status="ok", trust=TrustLevel.INTERVAL_CERTIFIED,
-                                      data=out, engine="arb")
-        import mpmath as mp
-        f = sp.lambdify(sp.Symbol(variable), sym, modules="mpmath")
-        enclosure = f(mp.iv.mpf([mp.mpf(lo_s), mp.mpf(hi_s)]))
-        return MathResult(ok=True, status="ok", trust=TrustLevel.INTERVAL_CERTIFIED,
-                          data={"engine": "mpmath.iv", "enclosure": mp.nstr(enclosure, 30)},
-                          engine="mpmath.iv")
+            if any(len(v) > self.settings.max_input_length for v in (lo, hi, variable)):
+                raise ValueError("Certified enclosure input exceeds max_input_length")
+            lower, upper = parse_math(lo), parse_math(hi)
+            data = mathir_interval_enclosure(ir, variable, lower, upper)
+            trust = TrustLevel.INTERVAL_CERTIFIED
+            if any(self._expr_trust(v) == TrustLevel.NUMERIC for v in (ir, lower, upper)):
+                trust = TrustLevel.NUMERIC
+            return MathResult(ok=True, status="ok", trust=trust, data=data, engine="mpmath.iv")
+        except (ValueError, TypeError, KeyError, ZeroDivisionError, NotImplementedError) as exc:
+            return MathResult(ok=False, status="error", trust=TrustLevel.UNKNOWN,
+                              errors=[str(exc)], engine="certified")
 
     def prove(self, expr_id: str, context_id: str | None = None,
               formal: bool = True) -> MathResult:
@@ -4045,6 +4051,62 @@ class MathKernel:
         return MathResult(ok=True, status=status, trust=trust,
                           data={"cert_id": cert_id, "tactic": cert.get("tactic"),
                                 "replay": out}, engine="lean")
+
+    def formal_project_audit(self, root: str, spec: dict | None = None,
+                             limits: dict | None = None) -> MathResult:
+        """Read source/configuration without executing project code. Trust stays UNKNOWN."""
+        from .formal_audit import AuditLimits, FormalProjectSpec, audit_lean_project
+        try:
+            report = audit_lean_project(root, FormalProjectSpec.model_validate(spec or {}),
+                                        AuditLimits.model_validate(limits or {}))
+        except (ValueError, OSError, TypeError) as exc:
+            return MathResult(ok=False, status="error", trust=TrustLevel.UNKNOWN,
+                              engine="formal_audit", errors=[str(exc)])
+        step = self._record(DerivationStep(step_id=self._id("step"),
+            operation="formal_project_audit", inputs=[report.source_sha256],
+            output=report.status, engine="formal_audit", trust=TrustLevel.UNKNOWN,
+            conditions=["Source inspection only; no theorem verification was performed"]))
+        return MathResult(ok=True, status="unknown", data=report.model_dump(mode="json"),
+                          engine="formal_audit", trust=TrustLevel.UNKNOWN, derivation=[step])
+
+    def formal_project_probe(self, spec: dict) -> MathResult:
+        """Generate a diagnostic candidate; never execute it or call it a certificate."""
+        from .formal_audit import FormalProjectSpec, lean_probe
+        try:
+            script = lean_probe(FormalProjectSpec.model_validate(spec))
+            return MathResult(ok=True, status="unknown", trust=TrustLevel.UNKNOWN,
+                engine="formal_audit", data={"script": script, "checked": False},
+                warnings=["Do not execute against an untrusted submission before Comparator"])
+        except (ValueError, TypeError) as exc:
+            return MathResult(ok=False, status="error", trust=TrustLevel.UNKNOWN,
+                              engine="formal_audit", errors=[str(exc)])
+
+    def formal_project_verify(self, request: dict, *, authorize_execution: bool = False) -> MathResult:
+        """Operator-only replay; not exposed through MCP, jobs, or the planner registry."""
+        from .formal_audit import ComparatorRequest, verify_with_comparator
+        from mathkernel_artifacts import EvidenceBundle, ProofEvidence
+        try:
+            report = verify_with_comparator(ComparatorRequest.model_validate(request),
+                                            authorize_execution=authorize_execution)
+        except (ValueError, OSError, TypeError) as exc:
+            return MathResult(ok=False, status="error", trust=TrustLevel.UNKNOWN,
+                              engine="comparator", errors=[str(exc)])
+        accepted = report.status == "accepted"
+        trust = TrustLevel.FORMAL if accepted else TrustLevel.UNKNOWN
+        bundle = EvidenceBundle()
+        if accepted:
+            bundle.proof.append(ProofEvidence(proposition=report.claim,
+                method="pinned_comparator_and_nanoda", engine="comparator",
+                certificate=report.model_dump(mode="json"), verified=True, trust="formal",
+                assumptions=list(report.permitted_axioms), side_conditions=list(report.limitations),
+                metadata={"semantic_alignment": "not_established"}))
+        step = self._record(DerivationStep(step_id=self._id("step"),
+            operation="formal_project_verify", inputs=[report.source_sha256 or "unavailable"],
+            output=report.status, engine="comparator", trust=trust, evidence_bundle=bundle,
+            conditions=list(report.limitations)))
+        return MathResult(ok=accepted, status="verified" if accepted else "unknown",
+            data=report.model_dump(mode="json"), engine="comparator", trust=trust,
+            evidence_bundle=bundle, derivation=[step], warnings=list(report.limitations))
 
     def _install_settings(self, settings: Settings) -> list[str]:
         """Replace live settings and refresh engines/store that cache them."""

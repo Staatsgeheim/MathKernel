@@ -1,0 +1,26 @@
+{
+  "schema_version": "mathkernel.audit-case/v1",
+  "repository": "https://github.com/openai/NavierStokesAndEuler",
+  "commit": "8937a8f4cbc7abaab5e9e97d1cc7f5d2319d9538",
+  "independent_reference_repository": "https://github.com/google-deepmind/formal-conjectures",
+  "independent_reference_commit": "8bf45ed70d48b2b2a501de9c00b26bfa38c573ee",
+  "independent_reference_path": "FormalConjectures/Millenium/NavierStokes.lean",
+  "inspection_scope": "targeted connector source reads, NOT a complete repository/dependency scan",
+  "source_blobs_observed": {
+    "NavierStokes/ComparatorSolution.lean": "cc232068cd384dbbddce2753b1fc4a4017c0f2d7",
+    "NavierStokes/ComparatorR3Theorem.lean": "eb98522380b91b209421bf7519f34bc68ba95c1d",
+    "NavierStokes/ComparatorDefinitions.lean": "d92c81ac99c1139e54c181c97d9021e975e23b7a",
+    "NavierStokes/R3ActualCandidate.lean": "5a1d79b69591388af6b4bfceb3566cb797e4fb8a",
+    "NavierStokes/ActualCandidateAssembly.lean": "820bd414afdb55d4d74a78be357311e6b234a2e4",
+    "ComparatorChallenges/NavierStokes.json": "b5fd32b1211faf7d282dac09d70be5527da9f486"
+  },
+  "formal_verification": "not_run",
+  "nanoda_verification": "not_run",
+  "mathematical_disproof": "not_found",
+  "do_not_infer": [
+    "A metadata sorry_count of zero is not an independently checked dependency result.",
+    "A source file stating an open proposition does not imply the final theorem is unproved.",
+    "An intentional challenge placeholder is not a used proof placeholder.",
+    "Local scaling checks do not establish the existence of the proposed solution."
+  ]
+}

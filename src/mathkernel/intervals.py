@@ -16,16 +16,16 @@ class IntervalEngine:
     def available(self) -> bool:
         return True
 
-    def _convert(self, node: Expr, env: dict[str, object]):
-        iv = mp.iv
+    def _convert(self, node: Expr, env: dict[str, object], iv=None):
+        iv = mp.iv if iv is None else iv
         if isinstance(node, (IntegerNode, RealNode, NumberNode)): return iv.mpf(node.value)
         if isinstance(node, RationalNode): return iv.mpf(node.numerator) / iv.mpf(node.denominator)
         if isinstance(node, SymbolNode):
             if node.name not in env: raise ValueError(f"Missing interval for symbol {node.name}")
             return env[node.name]
-        if isinstance(node, UnaryNode): return -self._convert(node.arg, env)
+        if isinstance(node, UnaryNode): return -self._convert(node.arg, env, iv)
         if isinstance(node, NaryNode):
-            vals=[self._convert(x,env) for x in node.args]
+            vals=[self._convert(x,env,iv) for x in node.args]
             if node.kind == "add":
                 out=iv.mpf(0)
                 for v in vals: out += v
@@ -34,13 +34,13 @@ class IntervalEngine:
             for v in vals: out *= v
             return out
         if isinstance(node, BinaryNode):
-            a,b=self._convert(node.left,env),self._convert(node.right,env)
+            a,b=self._convert(node.left,env,iv),self._convert(node.right,env,iv)
             return a / b if node.kind == "div" else a ** b
         if isinstance(node, CallNode):
             funcs={"sqrt":iv.sqrt,"sin":iv.sin,"cos":iv.cos,"exp":iv.exp,"log":iv.ln,"abs":abs,
                    "pi":lambda: iv.pi}
             if node.name not in funcs: raise ValueError(f"Interval backend does not support {node.name}")
-            return funcs[node.name](*[self._convert(x,env) for x in node.args])
+            return funcs[node.name](*[self._convert(x,env,iv) for x in node.args])
         raise ValueError("Interval evaluation requires an arithmetic expression, not a relation")
 
     def evaluate(self, node: Expr, bounds: dict[str, tuple[str|float, str|float]], dps: int = 50) -> dict:

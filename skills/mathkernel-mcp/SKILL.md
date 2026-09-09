@@ -158,3 +158,10 @@ Load the file matching the task domain:
   can raise live `MATHKERNEL_*` caps, but only when the server was started
   with `MATHKERNEL_YOLO_MODE=true` (default off). Values are type-checked.
   This is a process safety gate, not mathematical evidence.
+
+## External formal-project audits
+
+See [formal-project-audit.md](formal-project-audit.md) for bounded read-only
+project inspection, operator-owned filesystem access, and the separation between
+source diagnostics and reference-controlled proof replay. Inspection is UNKNOWN;
+unexecuted diagnostics are never certificates.

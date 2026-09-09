@@ -61,3 +61,40 @@ def certified_root_check(fn, center: str, width: str = "1e-30") -> dict | None:
     out = fn(ball)
     return {"engine": "arb", "enclosure": out.str(),
             "contains_zero": bool(out.contains(arb(0)))}
+
+
+def mathir_interval_enclosure(node, variable: str, lower_node, upper_node, *, dps: int = 50) -> dict:
+    """Enclose MathIR without point-rounding constants, endpoints or coefficients.
+
+    A private interval context avoids shared precision mutation between jobs.
+    Unsupported expressions, unordered/overlapping endpoint enclosures and
+    non-finite results fail closed. This is an enclosure, not a PDE theorem.
+    """
+    from mpmath.ctx_iv import MPIntervalContext
+    from .intervals import IntervalEngine
+    if not 15 <= dps <= 500:
+        raise ValueError("dps must be between 15 and 500")
+    iv = MPIntervalContext()
+    iv.dps = dps
+    engine = IntervalEngine()
+    constants = {"pi": iv.pi, "e": iv.exp(iv.mpf(1))}
+    low = engine._convert(lower_node, constants, iv)
+    high = engine._convert(upper_node, constants, iv)
+    def finite_real(value):
+        return hasattr(value, "_mpi_") and bool(value.a > iv.ninf) and bool(value.b < iv.inf)
+    if not finite_real(low) or not finite_real(high):
+        raise ValueError("Certified bounds must be finite")
+    # Exact equal syntax may still enclose an irrational number with width.
+    # Otherwise require separated endpoint enclosures to establish order.
+    equal = lower_node == upper_node
+    if not equal and not bool(low.b <= high.a):
+        raise ValueError("Bounds are reversed or their order is unresolved")
+    domain = iv.mpf([low.a, high.b])
+    enclosure = engine._convert(node, {**constants, variable: domain}, iv)
+    if not finite_real(enclosure):
+        raise ValueError("Non-finite enclosure: domain singularity or unsupported bound")
+    return {"engine": "mpmath.iv", "enclosure": str(enclosure),
+            "lower": str(enclosure.a), "upper": str(enclosure.b), "dps": dps,
+            "domain_enclosure": str(domain), "endpoint_evaluation": "outward_interval_MathIR",
+            "strictly_positive": bool(enclosure.a > 0),
+            "strictly_negative": bool(enclosure.b < 0), "contains_zero": bool(0 in enclosure)}

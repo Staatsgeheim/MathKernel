@@ -202,3 +202,10 @@ Load the file matching the task domain:
 `python -m pytest tests/ -q` — full suite (~2 min). GPU smoke test:
 `python scripts/gpu_smoke.py` (verifies cuBLAS, NVRTC, sieve, koopman
 numeric path).
+
+## External formal-project audits
+
+See [formal-project-audit.md](formal-project-audit.md) for bounded read-only
+project inspection, operator-owned filesystem access, and the separation between
+source diagnostics and reference-controlled proof replay. Inspection is UNKNOWN;
+unexecuted diagnostics are never certificates.

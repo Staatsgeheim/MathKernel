@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mathkernel"
-version = "1.3.1.dev1"
+version = "1.3.1.dev2"
 description = "Evidence-aware multi-engine mathematics runtime for LLMs: exact, symbolic, formal, certified-interval and numeric computation with typed MathIR, trust labels, and full provenance — as a Python library and an MCP server"
 readme = {file = "README.md", content-type = "text/markdown"}
 requires-python = ">=3.11"
@@ -64,6 +64,7 @@ certified = ["python-flint>=0.6"]
 [project.scripts]
 mathkernel-mcp = "mathkernel_mcp.server:main"
 mathkernel-lean-setup = "mathkernel.lean_bootstrap:main"
+mathkernel-formal-audit = "mathkernel.formal_audit.__main__:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

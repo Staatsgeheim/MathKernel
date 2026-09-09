@@ -44,6 +44,17 @@ class VerificationCoordinator:
             detail={"difference": str(diff)}))
         detail["symbolic_difference"] = str(diff)
 
+        # A closed rational counterexample needs no SMT solver. Do not apply
+        # this shortcut to variables, approximate ancestry or conditional goals.
+        if not approximate and not assumptions and not names and not yes:
+            lvalue, rvalue = sym.to_sympy(left, env), sym.to_sympy(right, env)
+            if lvalue.is_Rational and rvalue.is_Rational and lvalue != rvalue:
+                witness = {"left_value": str(lvalue), "right_value": str(rvalue)}
+                detail["counterexample"] = witness
+                evidence.append(EngineEvidence(engine="rational", capability="exact_rational_inequality",
+                    status=VerificationStatus.DISPROVED, trust=TrustLevel.EXACT,
+                    detail={"counterexample": witness, "arithmetic": "exact rational evaluation"}))
+
         z3: Z3Engine = self.router.engine("z3")  # type: ignore[assignment]
         if approximate:
             evidence.append(EngineEvidence(engine="z3", capability="counterexample",

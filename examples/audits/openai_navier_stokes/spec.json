@@ -1,0 +1,9 @@
+{
+  "targets": [
+    {"module": "NavierStokes.ComparatorSolution", "declaration": "NavierStokes.Comparator.navier_stokes_breakdown_R3"},
+    {"module": "NavierStokes.ComparatorSolution", "declaration": "NavierStokes.Comparator.navier_stokes_breakdown_periodic"}
+  ],
+  "expected_toolchain": "leanprover/lean4:v4.34.0-rc2",
+  "comparator_configs": ["ComparatorChallenges/NavierStokes.json"],
+  "permitted_axioms": ["propext", "Quot.sound", "Classical.choice"]
+}

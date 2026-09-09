@@ -6,7 +6,7 @@
 
 Mathematical results carry an explicit **trust level**, an **engine** tag, and a **derivation trail**. Exact computation, checked certificates, symbolic results, certified enclosures, empirical evidence, and formal proofs are distinct claims. Exact arithmetic alone is not a formal proof; approximate-input ancestry must not silently disappear.
 
-[![version](https://img.shields.io/badge/version-1.3.1.dev1-blue)]()
+[![version](https://img.shields.io/badge/version-1.3.1.dev2-blue)]()
 [![python](https://img.shields.io/badge/python-%3E%3D3.11-blue)]()
 [![engines](https://img.shields.io/badge/engines-sympy%20%C2%B7%20z3%20%C2%B7%20lean%20%C2%B7%20numba%20%C2%B7%20cuda-orange)]()
 [![license](https://img.shields.io/badge/license-MIT-lightgrey)]()
@@ -26,6 +26,7 @@ not certify every backend, platform, or mathematical claim.
 - [Quickstart — MCP server](#quickstart--mcp-server)
 - [Quickstart — Python library](#quickstart--python-library)
 - [Trust model](#trust-model)
+- [External formal-project audits](#external-formal-project-audits)
 - [Continuous symbolic mathematics](#continuous-symbolic-mathematics)
 - [Finite dynamics & PRNG analysis](#finite-dynamics--prng-analysis)
 - [Engineering mathematics](#engineering-mathematics)
@@ -122,6 +123,7 @@ stronger mathematical evidence merely by producing a polished plot or audio arti
 | Units | SI dimensions, rational conversions and semantic-unit propagation | exact Fraction | EXACT |
 | Assurance | interval obligations, Lean replay, Arb balls, persistence and fuzzing | mpmath.iv + flint + Lean | CERTIFIED NUMERIC / FORMAL / differential evidence |
 | Theorem proving | SMT portfolio and Lean certificates | Z3 + Lean | EXACT SMT witness or FORMAL kernel-checked proof |
+| External formal projects | bounded source/lock/import audit, unexecuted diagnostics; operator-only reference-controlled replay | lexical inspector + optional pinned Comparator/nanoda | source inspection is UNKNOWN; formal replay is relative to a trusted Lean reference, never automatic paper equivalence |
 | Exhaustive sweeps | Collatz and cuboid searches | numba + CUDA + process pools | EXACT only when coverage is exhaustive |
 | Async jobs | submit/status/result/list with evidence-preserving retrieval | job pool | Preserves underlying evidence |
 | Visualization | renderer-neutral interactive/static mathematical artifacts | Python SVG + vendored three.js | No new evidence; preserves source trust |
@@ -413,6 +415,40 @@ an expression caps its trust at `numeric` from `parse` onward — `0.1 + x` pars
 proofs and counterexamples are refused for approximate inputs or assumptions, because the backends would encode
 decimal syntax as exact rationals — silently proving a different statement. Use exact
 rationals or interval certification when proof-grade evidence is needed.
+
+## External formal-project audits
+
+`mathkernel.formal_audit` inspects external Lean projects without compiling them,
+checks source/toolchain/dependency fingerprints, inventories lexical imports and
+flags placeholders, unexpected axioms, native constructs and unsafe verification
+configuration. Inspection results remain **UNKNOWN**: source-module reachability
+is not proof-dependency reachability, and absence of `sorry` text is not proof.
+The Python facade exposes `formal_project_audit` and `formal_project_probe` with
+normal derivation/evidence tracking and output paging.
+
+The `mathkernel-formal-audit` CLI provides `inspect`, `fingerprint`, `probe` and
+operator-authorized `replay`. Replay requires a separate trusted reference,
+pinned tools, a fresh Linux unprivileged sandbox and Comparator with nanoda. It
+never pre-builds an untrusted submission. Successful checking supports only the
+specified Lean statements and axiom policy; mathematical paper/definition
+alignment remains a separate obligation. **Live external-checker qualification
+is still pending**; mocked runner tests are not proof verification.
+
+MCP exposes only read-only `math_formal_project_audit` and
+`math_formal_project_probe`. Local project access is disabled unless the operator
+sets `MATHKERNEL_FORMAL_PROJECT_ROOTS` before startup. Clients cannot enable replay
+or change checker binaries through these tools.
+
+`certified_enclose` evaluates coefficients and endpoint expressions directly in
+an isolated `mpmath.iv` context, without point-rounding them first. Approximate
+input or endpoint ancestry remains NUMERIC; unsupported domains return errors.
+Closed exact rational inequalities can be refuted without optional SMT tools.
+
+The [formal-project audit guide](skills/mathkernel/formal-project-audit.md)
+describes the trust boundary and deployment contract. The
+[Navier–Stokes audit example](examples/audits/openai_navier_stokes/README.md)
+contains pinned targets and reproducible local checks, not a claimed proof or
+disproof of the full construction.
 
 ## Continuous symbolic mathematics
 
@@ -999,6 +1035,7 @@ current support limits.
 | Units | `math_unit_check`, `math_unit_convert`, `math_unit_simplify` |
 | Assurance | `math_store_status`, `math_replay`, `math_fuzz_differential`, `math_certified_enclose` |
 | Proving | `math_prove`, `math_prove_batch`, `math_prove_replay` |
+| External formal audits | `math_formal_project_audit`, `math_formal_project_probe` (read-only; operator-allowlisted roots) |
 | Provenance | `math_derivation_get`, `math_derivation_trace` |
 
 </details>

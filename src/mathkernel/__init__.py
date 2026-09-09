@@ -482,3 +482,8 @@ __all__ += [
 
 from .python_api import ExpressionHandle, KernelOperationError, complete_result
 __all__ += ["__version__", "ExpressionHandle", "KernelOperationError", "complete_result"]
+
+from .formal_audit import (FormalProjectSpec, FormalTarget, FormalAuditReport,
+                           ComparatorRequest, ComparatorReport)
+__all__ += ["FormalProjectSpec", "FormalTarget", "FormalAuditReport",
+            "ComparatorRequest", "ComparatorReport"]

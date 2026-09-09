@@ -6,6 +6,10 @@
 from __future__ import annotations
 
 import json
+import os
+
+# Captured once at process start; not mutable through math_yolo_settings.
+_FORMAL_PROJECT_ROOTS = tuple(p for p in os.environ.get("MATHKERNEL_FORMAL_PROJECT_ROOTS", "").split(os.pathsep) if p)
 
 from mathkernel.kernel import MathKernel
 
@@ -913,9 +917,9 @@ candidates — rewrite it explicitly and retry.""")
 
     @mcp.tool
     def math_certified_enclose(expr_id: str, variable: str, lo: str, hi: str) -> dict:
-        """Rigorous interval enclosure of a univariate expression over [lo, hi]:
-        Arb ball arithmetic when python-flint is installed, else mpmath.iv.
-        interval_certified trust."""
+        """Outward-rounded MathIR enclosure over [lo, hi] in a private mpmath.iv context.
+        Exact endpoints/coefficients stay interval-valued; approximate ancestry stays numeric.
+        This is not a continuum/PDE bound."""
         return kernel.certified_enclose(expr_id, variable, lo, hi).model_dump(mode="json")
 
     @mcp.tool
@@ -937,6 +941,27 @@ candidates — rewrite it explicitly and retry.""")
         """Re-check a stored Lean certificate (requires MATHKERNEL_STORE_PATH).
         formal trust when the replay proves."""
         return kernel.prove_replay(cert_id).model_dump(mode="json")
+
+    @mcp.tool
+    def math_formal_project_audit(root: str, spec: dict | None = None) -> dict:
+        """Read-only Lean source audit in operator-allowlisted roots. Always UNKNOWN, never a proof.
+
+        Does not execute Lean/Lake or install/download anything. Full results
+        exceeding the output budget remain available through result resources.
+        """
+        from mathkernel.formal_audit.access import authorized_root
+        from mathkernel.models import MathResult, TrustLevel
+        try:
+            path = authorized_root(root, _FORMAL_PROJECT_ROOTS)
+        except (ValueError, OSError) as exc:
+            return MathResult(ok=False, status="error", trust=TrustLevel.UNKNOWN,
+                              engine="formal_audit", errors=[str(exc)]).model_dump(mode="json")
+        return kernel.formal_project_audit(str(path), spec).model_dump(mode="json")
+
+    @mcp.tool
+    def math_formal_project_probe(spec: dict) -> dict:
+        """Generate an UNEXECUTED Lean diagnostic. Not a certificate or a proof."""
+        return kernel.formal_project_probe(spec).model_dump(mode="json")
 
     @mcp.tool
     def math_gf2m_create(degree: int, reduction: str) -> dict:

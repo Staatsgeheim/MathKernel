@@ -52,3 +52,12 @@ kernel.prove_replay(cert_id)                 # re-check a stored certificate
 With `MATHKERNEL_STORE_PATH` set, certificates persist and `prove` returns
 `data.certificate_id`; otherwise the script is inlined as `data.certificate`.
 `MATHKERNEL_PROVE_PORTFOLIO_SIZE` (default 3) caps the encoding portfolio.
+
+## External projects
+
+`formal_project_audit` and `formal_project_probe` inspect external Lean projects
+without running them; neither is a theorem proof. Full external Comparator replay
+is operator-only and uses a separate trusted reference. See
+[formal-project-audit.md](formal-project-audit.md). Closed exact rational
+inequalities also have a solver-free refutation path; variable, conditional and
+approximate claims are not silently reduced to that fragment.
