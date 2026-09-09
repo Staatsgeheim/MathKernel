@@ -1,1 +1,3 @@
 graft src/mathkernel/lean_workspace
+
+recursive-include tests/compute *.py

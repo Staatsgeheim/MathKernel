@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mathkernel"
-version = "1.4.0.dev2"
+version = "1.4.0.dev3"
 description = "Evidence-aware multi-engine mathematics runtime for LLMs: exact, symbolic, formal, certified-interval and numeric computation with typed MathIR, trust labels, and full provenance — as a Python library and an MCP server"
 readme = {file = "README.md", content-type = "text/markdown"}
 requires-python = ">=3.11"
@@ -35,6 +35,9 @@ dependencies = [
 
 [project.optional-dependencies]
 compute = ["rfc8785>=0.1.4,<0.2", "scipy>=1.11"]
+compute-modal = ["rfc8785>=0.1.4,<0.2", "scipy>=1.11", "modal==1.5.5"]
+compute-runpod = ["rfc8785>=0.1.4,<0.2", "scipy>=1.11", "boto3==1.43.90"]
+compute-runpod-worker = ["rfc8785>=0.1.4,<0.2", "scipy>=1.11", "boto3==1.43.90", "runpod==1.12.0"]
 mcp = ["fastmcp>=3,<4"]
 dev = ["pytest>=8"]
 perf = ["numba>=0.59"]
@@ -66,7 +69,7 @@ mathkernel-lean-setup = "mathkernel.lean_bootstrap:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-"mathkernel_compute" = ["README.md", "REMOTE.md", "IMPLEMENTATION.md"]
+"mathkernel_compute" = ["README.md", "REMOTE.md", "MANAGED.md", "IMPLEMENTATION.md"]
 "mathkernel" = ["py.typed", "lean_workspace/*"]
 "mathkernel_viz" = ["assets/*"]
 "mathkernel_multimodal" = ["assets/*"]

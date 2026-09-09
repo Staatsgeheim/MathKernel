@@ -43,9 +43,11 @@ opening or connecting a graph does not establish execution or mathematical evide
 ## Optional compute planning and execution
 
 For `mathkernel_compute` or `mathkernel-compute`, read [remote-compute.md](remote-compute.md).
-The current pilot has separate native local, SSH and Slurm execution paths with
-explicit grants and local candidate verification. SSH/Slurm export requires an
-exact-scope host approval and an operator-pinned target profile. Do not route existing jobs to it automatically.
+The service has separate native local, SSH and Slurm execution paths, plus
+experimental Modal Sandbox and existing Runpod endpoint adapters. All retain
+explicit grants and local candidate verification. Remote export requires an
+exact-scope host approval and an operator-pinned target profile; paid execution
+also requires its scoped monetary reservation. Do not route existing jobs to it automatically.
 
 ## Shared multimodal projection contract
 

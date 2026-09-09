@@ -17,7 +17,7 @@ class Contract(BaseModel):
 
 class CuboidParameters(Contract):
     bound: IntegerText
-    engine: Literal['python'] = 'python'
+    engine: Literal['python', 'cuda'] = 'python'
 
     @field_validator('bound')
     @classmethod
@@ -47,7 +47,7 @@ class ResourceRequirements(Contract):
     verification_timeout_ms: int = Field(default=60000, ge=100, le=60000)
     max_output_bytes: int = Field(default=1_048_576, ge=4096, le=1_048_576)
     threads: Literal[1] = 1
-    gpu_count: Literal[0] = 0
+    gpu_count: Literal[0, 1] = 0
 
     @field_validator('threads', 'gpu_count', mode='before')
     @classmethod
@@ -73,22 +73,25 @@ class ComputeRequest(Contract):
                 raise ValueError('cuboid_sweep requires integer parameters and a search claim')
         elif not isinstance(self.parameters, ConvolutionParameters) or self.required_claim != 'numeric_convolution':
             raise ValueError('signal_convolve requires numeric samples and numeric_convolution claim')
+        wants_gpu = isinstance(self.parameters, CuboidParameters) and self.parameters.engine == 'cuda'
+        if self.resources.gpu_count != int(wants_gpu):
+            raise ValueError('CUDA engine requires exactly one GPU; CPU engines require zero GPUs')
         return self
 
 
 class TargetCapabilities(Contract):
     process_deadline: Literal['supported', 'unsupported']
     process_tree_cleanup: Literal['supported', 'unsupported']
-    output_retention: Literal['controller-spool', 'remote-spool'] = 'controller-spool'
-    network_isolation: Literal['unsupported'] = 'unsupported'
-    hard_memory_limit: Literal['unsupported'] = 'unsupported'
+    output_retention: Literal['controller-spool', 'remote-spool', 'durable-provider-store'] = 'controller-spool'
+    network_isolation: Literal['unsupported', 'provider-configured'] = 'unsupported'
+    hard_memory_limit: Literal['unsupported', 'provider-configured'] = 'unsupported'
     hard_cost_cap: Literal['unsupported'] = 'unsupported'
     source: Literal['local-runtime', 'operator-profile'] = 'local-runtime'
 
 
 class ComputeTarget(Contract):
     target_id: Identifier = 'local-cpu'
-    adapter: Literal['local', 'ssh', 'slurm'] = 'local'
+    adapter: Literal['local', 'ssh', 'slurm', 'modal', 'runpod'] = 'local'
     ownership: Literal['existing'] = 'existing'
     available: bool
     capabilities: TargetCapabilities
@@ -102,6 +105,12 @@ class InputBundle(Contract):
     classification: Literal['local_only', 'explicit_export'] = 'local_only'
 
 
+class AcceleratorProfile(Contract):
+    cupy_version: str = Field(max_length=64)
+    cuda_runtime: int = Field(ge=10000, le=99999)
+    cuda_driver: int = Field(ge=10000, le=99999)
+
+
 class RuntimeProfile(Contract):
     kind: Literal['native'] = 'native'
     digest: Digest
@@ -109,6 +118,14 @@ class RuntimeProfile(Contract):
     platform: str
     kernel_version: str
     dependencies: tuple[str, ...]
+    accelerator: AcceleratorProfile | None = None
+
+    @model_serializer(mode='wrap')
+    def compatible_bytes(self, handler):
+        data = handler(self)
+        if self.accelerator is None:
+            data.pop('accelerator', None)
+        return data
 
 
 class SlurmAllocation(Contract):
@@ -138,6 +155,97 @@ class RemoteBinding(Contract):
     allocation: SlurmAllocation | None = None
 
 
+class Money(Contract):
+    currency: Literal['EUR', 'USD'] = 'EUR'
+    amount: Annotated[str, Field(pattern=r'^(0|[1-9][0-9]*)\.[0-9]{2}$', max_length=32)] = '0.00'
+
+
+class ManagedQuote(Contract):
+    quote_id: Identifier
+    reservation: Money
+    valid_until_ms: int = Field(ge=0)
+    source: str = Field(min_length=1, max_length=512)
+    scope: str = Field(min_length=1, max_length=1000)
+    hard_spend_cap_supported: Literal[False] = False
+
+    @model_validator(mode='after')
+    def native_currency(self):
+        if self.reservation.currency != 'USD' or not Decimal('0.01') <= Decimal(self.reservation.amount) <= Decimal('1000000'):
+            raise ValueError('Managed reservations require a positive bounded USD amount')
+        return self
+
+
+class BudgetLimit(Contract):
+    budget_id: Identifier
+    account_scope: Identifier
+    limit: Money
+
+    @model_validator(mode='after')
+    def native_currency(self):
+        if self.limit.currency != 'USD' or not Decimal('0.01') <= Decimal(self.limit.amount) <= Decimal('1000000'):
+            raise ValueError('Managed budget limits require a positive bounded USD amount')
+        return self
+
+
+class ManagedResources(Contract):
+    cpu_millicores: int = Field(default=1000, ge=1000, le=16000)
+    memory_mib: int = Field(default=2048, ge=512, le=65536)
+    gpu: str | None = Field(default=None, pattern=r'^[A-Za-z0-9_-]{1,40}$')
+    lifetime_ms: int = Field(default=180000, ge=120000, le=900000)
+    ttl_ms: int = Field(default=600000, ge=120000, le=3600000)
+    network: Literal['blocked', 'broker-only'] = 'blocked'
+
+    @model_validator(mode='after')
+    def finite_lifetime(self):
+        if self.ttl_ms < self.lifetime_ms:
+            raise ValueError('Total TTL must cover maximum active lifetime')
+        return self
+
+
+class ModalOptions(Contract):
+    app_name: Identifier
+    environment: Identifier
+    region: str
+    sdk_version: Literal['1.5.5'] = '1.5.5'
+    volume_version: Literal[2] = 2
+
+
+class RunpodOptions(Contract):
+    deployment_digest: Digest
+    workers_min: int = Field(ge=0, le=16)
+    workers_max: int = Field(ge=1, le=16)
+    idle_timeout_seconds: int = Field(ge=1, le=600)
+
+
+class ManagedBinding(Contract):
+    adapter: Literal['modal', 'runpod']
+    target_profile_digest: Digest
+    verifier_runtime: RuntimeProfile
+    account_scope: Identifier
+    destination: str = Field(min_length=1, max_length=256)
+    image_identity: str = Field(min_length=1, max_length=256)
+    storage_scope: str = Field(min_length=1, max_length=512)
+    source_image: str = Field(min_length=1, max_length=256)
+    provider_options: ModalOptions | RunpodOptions
+    resources: ManagedResources
+    budget: BudgetLimit
+    quote: ManagedQuote
+    qualification: Literal['experimental-not-live-qualified'] = 'experimental-not-live-qualified'
+
+
+class PaidApproval(Contract):
+    budget_id: Identifier
+    reservation: Money
+    managed_exposure_acknowledged: bool
+    persistent_storage_allowed: bool
+
+    @model_validator(mode='after')
+    def explicit_scope(self):
+        if not self.managed_exposure_acknowledged or not self.persistent_storage_allowed:
+            raise ValueError('Paid execution requires explicit exposure and storage approval')
+        return self
+
+
 class ExecutionSpec(Contract):
     protocol_version: Literal['1.0'] = '1.0'
     bundle: InputBundle
@@ -146,18 +254,26 @@ class ExecutionSpec(Contract):
     runtime: RuntimeProfile
     policy_digest: Digest
     remote: RemoteBinding | None = None
+    managed: ManagedBinding | None = None
 
     @model_serializer(mode='wrap')
     def compatible_bytes(self, handler):
         data = handler(self)
+        if self.managed is None:
+            data.pop('managed', None)
         if self.remote is None:
             data.pop('remote', None)  # Preserve canonical identities of existing 1.0 local records.
         return data
 
+    @model_validator(mode='after')
+    def single_endpoint(self):
+        if self.remote is not None and self.managed is not None:
+            raise ValueError('Execution has exactly one provider binding')
+        return self
 
-class Money(Contract):
-    currency: Literal['EUR'] = 'EUR'
-    amount: Annotated[str, Field(pattern=r'^(0|[1-9][0-9]*)\.[0-9]{2}$', max_length=32)] = '0.00'
+    @property
+    def endpoint(self):
+        return self.managed or self.remote
 
 
 class ComputePlan(Contract):
@@ -189,6 +305,20 @@ class AuthorizationGrant(Contract):
     export_allowed: bool = False
     provisioning_allowed: Literal[False] = False
     retries_allowed: Literal[False] = False
+    paid: PaidApproval | None = None
+
+    @model_serializer(mode='wrap')
+    def compatible_bytes(self, handler):
+        data = handler(self)
+        if self.paid is None:
+            data.pop('paid', None)
+        return data
+
+
+class BatchBinding(Contract):
+    batch_id: Identifier
+    shard_id: Identifier
+    batch_plan_digest: Digest
 
 
 class AttemptRecord(Contract):
@@ -198,10 +328,13 @@ class AttemptRecord(Contract):
     workspace_id: Identifier
     spec: ExecutionSpec
     start_deadline_ms: int | None = Field(default=None, ge=0)
+    batch: BatchBinding | None = None
 
     @model_serializer(mode='wrap')
     def compatible_bytes(self, handler):
         data = handler(self)
+        if self.batch is None:
+            data.pop('batch', None)
         if self.start_deadline_ms is None:
             data.pop('start_deadline_ms', None)
         return data
@@ -250,7 +383,7 @@ class ComputeResultReceipt(Contract):
     verification: str
     artifacts: str
     resources: str
-    cost: Literal['NO_METERED_ALLOCATION', 'ALLOCATION_USAGE_UNKNOWN', 'EXISTING_HOST_COST_UNMEASURED'] = 'NO_METERED_ALLOCATION'
+    cost: Literal['NO_METERED_ALLOCATION', 'ALLOCATION_USAGE_UNKNOWN', 'EXISTING_HOST_COST_UNMEASURED', 'RESERVED', 'EXPOSURE_UNKNOWN', 'USER_RECONCILED'] = 'NO_METERED_ALLOCATION'
     candidate_ref: Digest | None = None
     accepted_result_ref: Digest | None = None
     transport: Literal['AVAILABLE', 'UNAVAILABLE'] = 'AVAILABLE'
@@ -294,6 +427,7 @@ class OperationDescriptor(Contract):
     operation: Literal['cuboid_sweep', 'signal_convolve']
     version: Literal['1'] = '1'
     engine: Literal['python', 'scipy']
+    optional_engines: tuple[Literal['cuda'], ...] = ()
     output_schema: Literal['mk.cuboid-pairs/1', 'mk.real-convolution/1']
     arithmetic: str
     claims: tuple[str, ...]

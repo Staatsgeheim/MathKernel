@@ -49,7 +49,7 @@ def run():
     attempt = parse(AttemptRecord, read_frame(sys.stdin.buffer))
     if digest(attempt.spec) != attempt.execution_digest or digest(attempt.spec.bundle) != attempt.bundle_digest:
         raise ValueError('EXECUTION_BINDING_MISMATCH')
-    if runtime_profile() != attempt.spec.runtime:
+    if runtime_profile(gpu=attempt.spec.runtime.accelerator is not None) != attempt.spec.runtime:
         raise ValueError('RUNTIME_CHANGED')
     ceiling = attempt.spec.bundle.request.resources.max_output_bytes + 4
     resource.setrlimit(resource.RLIMIT_FSIZE, (ceiling, ceiling))
@@ -60,7 +60,7 @@ def run():
         execution_digest=attempt.execution_digest, bundle_digest=attempt.bundle_digest,
         operation=attempt.spec.bundle.request.operation,
         output_schema=OPERATIONS[attempt.spec.bundle.request.operation]['output_schema'], output=output,
-        worker_claims={'engine': OPERATIONS[attempt.spec.bundle.request.operation]['engine']})
+        worker_claims={'engine': attempt.spec.bundle.request.parameters.engine})
     write_frame(sys.stdout.buffer, envelope, ceiling-4)
 
 

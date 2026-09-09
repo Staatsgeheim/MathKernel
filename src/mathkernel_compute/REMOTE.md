@@ -218,7 +218,8 @@ SSH server and real native worker subprocesses. Slurm tests use a scheduler
 simulator and run the real generated batch script. These establish implementation
 and protocol behavior, **not qualification of an external OpenSSH host or Slurm
 cluster**. Windows/macOS controller code paths are present but not qualified here.
-Apptainer/SIF profiles, GPU profiles, job arrays/MPI, paid cloud providers, independent
-host-failure watchdogs, automated retention and Studio/MCP compute integration remain
-separate implementation/qualification work. No container support is advertised by
-these native profiles.
+Apptainer/SIF profiles, native GPU profiles, job arrays/MPI, independent host-failure
+watchdogs, automated retention and Studio/MCP compute integration remain separate
+implementation/qualification work. Experimental paid Modal/Runpod adapters have
+their own [managed-provider setup and qualification boundary](MANAGED.md).
+No container support is advertised by these native profiles.

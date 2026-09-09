@@ -1,4 +1,4 @@
-name: Compute native adapters
+name: Compute adapters
 on:
   push:
     paths: ['src/mathkernel_compute/**', 'tests/compute/**', 'pyproject.toml', '.github/workflows/compute.yml']
@@ -18,7 +18,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
-      - run: python -m pip install -e '.[compute,dev,perf]' build 'paramiko>=3,<5'
+      - run: python -m pip install -e '.[compute,compute-modal,compute-runpod,dev,perf]' build 'paramiko>=3,<5'
       - run: python -m pytest tests/compute -q
       - run: python -m pytest tests/test_jobs.py tests/test_cuboid.py tests/test_engineering_signal.py tests/test_evidence_composition_hardening.py -q
       - run: python -m unittest discover -s tests -p test_workflow_runtime.py -v

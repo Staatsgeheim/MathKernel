@@ -13,7 +13,7 @@ from .models import OperationDescriptor, CuboidParameters, ConvolutionParameters
 
 def descriptors():
     return (
-        OperationDescriptor(operation='cuboid_sweep', engine='python', output_schema='mk.cuboid-pairs/1',
+        OperationDescriptor(operation='cuboid_sweep', engine='python', optional_engines=('cuda',), output_schema='mk.cuboid-pairs/1',
             arithmetic='exact integers; bound 2..2000', claims=('witnesses', 'complete_search'),
             verifier='pythagorean-identities-and-euclid', parameter_schema_digest=digest(CuboidParameters.model_json_schema())),
         OperationDescriptor(operation='signal_convolve', engine='scipy', output_schema='mk.real-convolution/1',
@@ -34,7 +34,7 @@ class _Registry:
 OPERATIONS = _Registry()
 
 
-def runtime_profile():
+def runtime_profile(*, gpu=False):
     # Identity includes installed project code, not a worker's claimed image hash.
     root = Path(__file__).resolve().parent.parent
     hasher = hashlib.sha256()
@@ -47,7 +47,14 @@ def runtime_profile():
                          ('pydantic', 'numpy', 'sympy', 'scipy', 'rfc8785'))
     details = {'source': hasher.hexdigest(), 'python': platform.python_version(),
                'platform': sys.platform, 'dependencies': dependencies, 'kernel': __version__}
-    return RuntimeProfile(digest=digest(details), python=details['python'],
+    accelerator = None
+    if gpu:
+        import cupy
+        from .models import AcceleratorProfile
+        accelerator = AcceleratorProfile(cupy_version=cupy.__version__,
+            cuda_runtime=cupy.cuda.runtime.runtimeGetVersion(), cuda_driver=cupy.cuda.runtime.driverGetVersion())
+        details['accelerator'] = accelerator.model_dump(mode='json')
+    return RuntimeProfile(accelerator=accelerator, digest=digest(details), python=details['python'],
                           platform=sys.platform, kernel_version=__version__, dependencies=dependencies)
 
 
@@ -55,7 +62,8 @@ def execute(request):
     """Return data only; legacy MathResult metadata does not cross the worker boundary."""
     if request.operation == 'cuboid_sweep':
         from mathkernel.cuboid import sweep_leg_pairs
-        result = sweep_leg_pairs(int(request.parameters.bound), engine='python', workers=1)
+        bound = int(request.parameters.bound)
+        result = sweep_leg_pairs(bound, engine=request.parameters.engine, workers=1, max_hits=bound*(bound-1)//2)
         return tuple((str(a), str(b)) for a, bs in sorted(result['pairs'].items()) for b in bs)
     if request.operation == 'signal_convolve':
         import sympy as sp
