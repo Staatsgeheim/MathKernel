@@ -15,14 +15,15 @@ from mathkernel import MathKernel, TrustLevel
 SOURCE = 'https://cdn.openai.com/pdf/32d9f210-8b73-45e0-91bc-82a30aef8a9a/navier-stokes.pdf'
 COMMIT = '8937a8f4cbc7abaab5e9e97d1cc7f5d2319d9538'
 # Exponent arithmetic is conditional on the ansatz of the paper, pp. 3-7.
+# Write leading negative rationals as (-1/2); unary minus spans a following difference.
 IDENTITIES = (
     ('support_volume_exponent', '2*(1/2)+(1/2-h)', '3/2-h'),
-    ('kinetic_energy_exponent', '2*(-1/2-h)+(3/2-h)', '1/2-3*h'),
-    ('L3_cubed_exponent', '3*(-1/2-h)+(3/2-h)', '-4*h'),
-    ('radial_enstrophy_scaling', '2*((-1/2-h)-1/2)+(3/2-h)', '-1/2-3*h'),
-    ('swirl_reynolds_exponent', '(-1/2-h)+1/2', '-h'),
-    ('radial_advection_rate', '-1/2-1/2', '-1'),
-    ('axial_advection_rate', '(-1/2-h)-(1/2-h)', '-1'),
+    ('kinetic_energy_exponent', '2*((-1/2)-h)+(3/2-h)', '1/2-3*h'),
+    ('L3_cubed_exponent', '3*((-1/2)-h)+(3/2-h)', '-4*h'),
+    ('radial_enstrophy_scaling', '2*(((-1/2)-h)-1/2)+(3/2-h)', '(-1/2)-3*h'),
+    ('swirl_reynolds_exponent', '((-1/2)-h)+1/2', '-h'),
+    ('radial_advection_rate', '(-1/2)-(1/2)', '-1'),
+    ('axial_advection_rate', '((-1/2)-h)-(1/2-h)', '-1'),
     ('axial_to_radial_diffusion_ratio', '-2*(1/2-h)-(-2*(1/2))', '2*h'),
     ('chart_jacobian_reduced', '(1-eta^2)+2*(1/2-h)*eta^2', '1-2*h*eta^2'),
     ('viscosity_advection_factor', 's*(s/s)', 's'),
@@ -57,7 +58,7 @@ def run_checks() -> dict:
     bounds = []
     for name, expression, lo, hi in (
         ('energy_exponent_positive', '1/2-3*h', '0', '1/100'),
-        ('enstrophy_time_integrability_margin', '(-1/2-3*h)+1', '0', '1/100'),
+        ('enstrophy_time_integrability_margin', '((-1/2)-3*h)+1', '0', '1/100'),
         # eta^2 <= 1 implies J/q^D >= 1-2h. This implication is a reviewed
         # elementary bound; this interval call certifies its positive margin.
         ('jacobian_lower_margin', '1-2*h', '0', '1/100'),

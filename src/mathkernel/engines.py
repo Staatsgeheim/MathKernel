@@ -443,7 +443,13 @@ class Z3Engine:
             return out
         if isinstance(node, BinaryNode):
             a, b = self.to_z3(node.left, env), self.to_z3(node.right, env)
-            if node.kind == "div": return a / b
+            if node.kind == "div":
+                # MathIR division is field/rational, not Z3 integer floor-division.
+                if not z3.is_real(a):
+                    a = z3.ToReal(a)
+                if not z3.is_real(b):
+                    b = z3.ToReal(b)
+                return a / b
             if not isinstance(node.right, (IntegerNode, NumberNode)):
                 raise ValueError("Z3 prototype only supports literal integer exponents")
             exponent = decimal_to_int(node.right.value)

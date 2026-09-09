@@ -56,6 +56,12 @@ def test_interval_contexts_do_not_change_global_precision():
     assert mp.iv.dps==old
 
 
+def test_negative_rational_literals_are_not_integer_floor_division():
+    result = MathKernel().prove_equivalence('(-1/2)-(1/2)', '-1', formal=False)
+    assert result.status == 'verified'
+    assert result.trust in (TrustLevel.EXACT, TrustLevel.SYMBOLIC)
+
+
 def test_closed_rational_false_identity_needs_no_z3_or_lean(monkeypatch):
     k=MathKernel()
     monkeypatch.setattr(type(k.z3),'available',property(lambda self:False))
