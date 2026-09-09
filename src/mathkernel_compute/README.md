@@ -6,7 +6,10 @@ native single-job Slurm adapter. Experimental Modal Sandbox and existing Runpod
 queue adapters add scoped paid approval, native USD reservations, durable provider
 artifacts and independent batches. Read [remote setup](REMOTE.md) for SSH/Slurm and
 [managed setup and qualification limits](MANAGED.md) before configuring paid targets.
-Live cloud/GPU qualification, Apptainer and VM provisioning remain outstanding.
+Experimental [Lambda provisioning](LAMBDA.md) adds explicit VM authority and an
+independent-host watchdog, with native CPU-only SSH delegation. Live cloud/GPU
+qualification and Apptainer remain outstanding. See [release qualification](RELEASE.md)
+for schema export, inert replay inspection, examples and clean-install checks.
 
 Install from this branch with `python -m pip install '.[compute]'`. The extra adds
 RFC 8785 canonicalization and SciPy. Core import does not import this package,
@@ -93,7 +96,7 @@ with ComputeClient(state_dir="compute-state") as compute:
 ## Ownership and durability
 
 One coordinator locks a private state directory. A separate SQLite schema (version
-1) uses WAL/FULL commits, integrity hashes, request/attempt uniqueness, intent
+3) uses WAL/FULL commits, integrity hashes, request/attempt uniqueness, intent
 records, revisions, grants and reservations. No legacy KernelStore migration is
 performed. Unknown journal versions are rejected. The directory is local storage,
 not a distributed database or multi-tenant service.

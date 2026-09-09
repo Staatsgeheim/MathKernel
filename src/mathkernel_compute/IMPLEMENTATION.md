@@ -1,167 +1,154 @@
 # Remote-compute implementation checkpoint
 
-## Grounding and branch
+## Grounding
 
-- Repository: `Staatsgeheim/MathKernel`; source branch `master`.
-- Exact base: `bf71fc88333ee6cf455cb12538e64fc385512a8a`, merged Studio PR #1.
-- Implementation branch: `mathkernel-remote`; no merge into `master`.
-- Previous local R0–R2 checkpoint: `3b71464ae005c25ad9f48c550ca5726d9528c550`.
-- Design: supplied `MathKernel_Remote_Compute_Design_Package.zip`, MK-RHC-001,
-  revision 1.0, 7 September 2026. Current implementation date: 9 September 2026.
-- Package development version: `1.4.0.dev3`; optional extras: `compute`, `compute-modal`, `compute-runpod`, `compute-runpod-worker`.
+- Repository: `Staatsgeheim/MathKernel`, branch `mathkernel-remote`.
+- Unchanged master/base: `bf71fc88333ee6cf455cb12538e64fc385512a8a` (merged Studio PR #1).
+- Previous checkpoint: `5444d76fb34e83d7428342759c2161a2d551db11` (R5–R6).
+- Design: supplied MathKernel Remote Compute Design Package, MK-RHC-001 revision 1.0,
+  7 September 2026. Implementation/qualification date: 9 September 2026.
+- Development package version: `1.4.0.dev4`.
 
-The independent `mathkernel_compute` subsystem does not replace the mathematical
-facade, legacy `job_*` APIs, `mathkernel_workflow`, or the Studio host. Remote
-candidates remain independent DTOs, not serialized kernel results. Existing formal
-and interval engines are not claimed as qualified remote verifiers.
+This continuation implements the **R7 owned-VM lifecycle and independent-watchdog
+strategy**, and the **R8 local release-hardening scope**. Remote deployments remain
+experimental. It does not claim every operation/profile or all 114 planned cases
+are complete. No changes route legacy mathematics, `job_*`, Studio workflows or MCP
+calls into paid remote execution. No cloud resource was launched during development.
 
-## Implemented boundary
+## Delivered scope
 
-This checkpoint extends the native R3/R4 implementation at
-`2ee9d04a9864c8ffb9a48064069d668b62b79c24` with **experimental R5 Modal Sandbox and
-R6 existing Runpod Serverless adapters**, paid reservation accounting, explicit CUDA
-eligibility and bounded independent batches. It does not claim live cloud/GPU
-qualification, complete R3–R6 release gates or execution of all 114 design cases.
-
-| Area | Delivered behavior | Remaining boundary |
+| Area | Behavior | Boundary |
 | --- | --- | --- |
-| R0–R2 contracts/lifecycle | Frozen strict contracts, RFC 8785 identities, exact input strings, explicit operation registry, scoped grants, independent SQLite journal, durable outbox, local native supervisor, quarantine and independent verification | Generic object/context export, array codecs, distributed coordinator and general verifier registries |
-| R3 planning/authority | Explicit operator target aliases; host/port/account and allocation review; pinned known-hosts content, worker configuration and remote/local runtime profiles; exact-scope single-attempt export approval | Remote target auto-selection and provider-native price feeds |
-| R3 SSH | Real OpenSSH client; restricted config sources, strict host keys, no forwarding/prompts; fixed gateway command; bounded data-only stdin; private confined spool; durable acceptance and duplicate/conflict handling | External OpenSSH daemon/host qualification, Windows/macOS controller qualification |
-| R3 supervision/recovery | Detached native Linux supervisor, start/runtime deadlines, process incarnation checks, cancellation intent, bounded retained bytes, host disconnect and controller exit recovery, uncertainty on unavailable ownership | Independent watchdog for host/supervisor failure; automatic retention/garbage collection |
-| R4 native Slurm | Reviewed partition/account/QOS/constraint and resource shape; fixed sbatch script, one node/task/CPU; no login-node mathematics; explicit queue/accounting fields; lost-ack reconciliation; UUID/digest/UID/submit-incarnation checks; no requeue; filtered cancellation | Live cluster/site qualification, Apptainer/SIF profile, arrays/MPI, GPU, federation |
-| R4 outcomes/accounting | Separate OOM/timeout/cancel/preempt/node-failure/expiry/exit states; no completion inference from absent squeue; no cleanup inference from scancel ack; bounded CPU/memory reservation and retained sacct usage | Institutional allocation-credit prices and currency conversion; exact queue expiry cancellation while controller is offline |
-| Admission | Raw candidate bytes preserved into quarantine; exact attempt/input/execution binding; independent Euclid/witness or Decimal numerical checks; local verifier runtime distinct from worker runtime; only new local evidence admitted | Arbitrary remote evidence/Lean import, general exact/numeric ancestry graphs and typed object re-import |
-| Interfaces | Python client, operator profiles, explicit probe/workspace/approval CLI, inert replay, setup guide | Compute MCP tools and Studio compute integration |
+| R0–R2 core | Strict immutable data contracts, exact inputs, RFC 8785 identities, explicit eligibility, host grants, durable journal/outbox, native worker supervision, quarantine and independent verification | Two self-contained operations; no arbitrary code/object graph export |
+| R3 SSH | Pinned host keys/configuration/runtime, bounded OpenSSH transport, private gateway spool, reconnect/cancel/deadline ownership | Native Linux CPU profile; external host and other controller OS qualification pending |
+| R4 Slurm | Native single-job allocation, owned scheduler incarnation, no requeue, separate accounting/cleanup observations | Simulator-qualified; no live cluster, GPU, arrays, MPI or Apptainer |
+| R5 Modal | Pinned SDK, existing app/image/Volume v2, bounded Sandbox, data/protobuf paths, durable artifacts, scoped cancellation | Experimental, Linux bridge; live GPU/network/durability/billing qualification pending |
+| R6 Runpod/batches | Existing queue endpoint, durable S3 broker, bounded CPU/explicit integer CUDA, 1–16 immutable independent shards, aggregate paid reservations | No live deployment or GPU measurement; no reducer/checkpoint/cache/stochastic stream engine |
+| R7 Lambda | Separate VM plan/grant/lease, pinned image/region/type/key/firewall, one-shot launch, ownership-tag lookup, exact provider termination, shared USD exposure ledger | Experimental managed exposure; no hard cap or qualified native expiry; native CPU-only SSH delegation |
+| R7 watchdog | Prearmable inert ticket, separate host approval/journal/credentials, exact owned-instance expiry cleanup, lost-ack/termination reconciliation | Operator-deployed independent failure domain; no machine attestation or guarantee during outages |
+| R8 contracts/replay | 19 runtime-derived schemas, bounded inert v1/v2 replay inspection, explicit external artifact requirements, no imported trust or authority | Replay is data, not an automatic rerun or self-contained artifact archive |
+| R8 packaging | Wheel/sdist hygiene, clean base and each provider-extra installation, sdist rebuild/install, installed examples, dependency freezes | Linux/Python 3.12 qualified here; CI matrix declared but not run remotely |
+| R8 measurements | Local exact/numerical submit/restart/retrieve/verify journeys with measured startup/handler/retrieval/verification/cleanup | No paid calibration, remote queue/provisioning, GPU speedup or statistical calibration claim |
 
-### Managed-provider implementation
+Existing native/managed setup remains in [REMOTE.md](REMOTE.md) and [MANAGED.md](MANAGED.md).
+New operator and qualification guides are [LAMBDA.md](LAMBDA.md) and [RELEASE.md](RELEASE.md).
+README/skills describe current behavior; progress is kept here.
 
-| Area | Delivered behavior | Qualification boundary |
-| --- | --- | --- |
-| R5 Modal | Pinned SDK 1.5.5; existing app/image/Volume v2; fixed Sandbox process; per-attempt volume submount; explicit CPU/memory limits, blocked network and native lifetime; v1 ID/tag ownership checks; durable candidate then terminal `sync` | No live Sandbox, volume lifetime, GPU, network/resource or billing qualification |
-| R5 SDK boundary | Byte/protobuf control paths only; SDK calls in Linux memory/CPU/wall/output-limited subprocess; real SDK poll/reattach/terminate test with deserialization forbidden | Linux controller only; SDK transitive behavior and provider deployment must be requalified on upgrades |
-| R6 Runpod | Bounded REST JSON; existing queue endpoint deployment digest check; immutable image, worker/idle/placement scope; explicit execution timeout and total TTL; scoped cancellation only | No live endpoint; provider acknowledgement required for authoritative job handle; worker receipt cannot authorize a cancel |
-| R6 durable broker | Existing AWS S3 store; explicit credentials; bounded streaming reads and conditional immutable writes; durable acceptance claim before math; real native worker; candidate before terminal descriptor | AWS credentials/IAM and live retention/connectivity require operator qualification; no arbitrary S3-compatible endpoint |
-| Monetary admission | Separate paid/export/storage grant; USD quote source/scope/expiry; one-journal aggregate reservations and retained uncertain exposure; immutable account/budget identity; reviewed cost/storage settlement | Soft managed exposure only; no account-global cap, native billing import or guaranteed final price |
-| R6 batches | 1–16 independent registered requests, stable shard IDs, atomic complete-set grants/reservations/outbox, bounded dispatch concurrency, parent-bounded start authority, duplicate/swap rejection, per-shard local verification | No mathematical reducer, stochastic stream, checkpoint/resume, distributed graph, MPI or contribution cache |
-| GPU eligibility | Existing integer CUDA sweep only, explicit one-GPU target/engine/resources, pinned CuPy/CUDA runtime and driver; independent CPU verifier | GPU execution/performance not exercised; no automatic GPU selection or cross-architecture bitwise guarantee |
+## Owned-VM authority and recovery
 
-The operator guide is [MANAGED.md](MANAGED.md). Setup failures known to precede an
-invocation release invocation ownership while retaining possible storage charges.
-A timeout during the invocation call remains ambiguous and never triggers a new
-submission. A finished job does not close its monetary reservation. A provider 404
-cannot erase confirmed execution/cleanup facts or establish a zero bill.
+A plan is not provisioning authority. `vm-approve` issues a distinct single-use
+host grant, bound to the exact profile, budget, quote, workspace and launch deadline.
+It explicitly acknowledges provider privileges, network egress, residual exposure
+and possible output loss at expiry. Strict mode refuses provisioning: a local thread
+or an unqualified watchdog cannot establish disconnected cleanup guarantees.
+Ordinary local/export/managed grants cannot authorize VM creation.
 
-`auto` remains local CPU. A remote request cannot synthesize its connection profile
-or issue its own grant. Existing-host costs and Slurm allocation credits remain
-unknown; the plan does not present a zero-price estimate for remote work. No paid
-host was provisioned or provider account accessed during implementation.
+Launch intent, reservation and consumed grant are committed before the provider
+call. The bridge rechecks start authority after rate limiting and before networking.
+A definite rejection voids the reservation; ambiguity keeps it. Repeated launch
+with the same request identity never creates a replacement. A unique authenticated
+ownership-tag match can recover the UUID; missing/duplicate/changed ownership stays
+unknown. Broad name-prefix deletion and guest shutdown do not exist in the adapter.
 
-## Protocol and retained records
+SSH attachment requires the provider-observed IP, an independently authenticated
+host key, the approved runtime and pinned gateway configuration. A single job is
+bound transactionally to the VM. Its export requires a separate SSH approval.
+Changing the profile cannot silently detach it from VM ownership. Normal completion
+retains and integrity-checks candidate bytes in durable local quarantine before
+termination. Temporarily missing output keeps the VM. Deadline/cancel cleanup may
+discard output, as explicitly acknowledged by the host grant.
 
-Worker candidates use protocol `1.0`, bundles `mk.bundle/1`, and the controller
-journal upgrades schema 1 to schema 2 transactionally. The fixed gateway adds its own `mk.gateway/1` protocol.
-New remote/managed bindings, accelerator metadata, batch bindings and attempt start
-deadlines are omitted from canonical records when absent, preserving existing
-R0–R4 plan/spec/attempt identities. Schema 2 adds provider handle/observation,
-settlement and batch tables without rewriting existing payloads. Unknown
-schema versions and unknown fields remain rejected. New side effects still require
-current policy/runtime identities; upgrading source is not implicit reauthorization.
+Termination intent precedes the exact-ID provider operation. A successful reply
+that says `terminating`, a timeout, a missing instance or a process exit cannot
+establish release or settle billing. Confirmed release remains distinct from the
+reviewed actual cost, including residual storage/transfer. VM and managed-job
+reservations share the coordinator ledger and concurrency policy; queued batches
+cannot dispatch around an occupied VM slot.
 
-The remote endpoint locks a private spool across independent SSH sessions. A durable
-intent precedes native launch or sbatch. If dispatch becomes ambiguous, observation
-never calls submit again. Status/cancel/fetch carry only references, not another
-copy of mathematical inputs. Gateway replies preserve candidate bytes through a
-bounded base64 wrapper, including malformed/untrusted candidate documents, for local
-quarantine before mathematical parsing.
+The independent watchdog can be armed before launch on another host. It uses its
+own local journal, reviewed credentials and terminal approval, not the laptop or
+guest state. It never launches resources or admits mathematics. Its physical
+independence remains operator-acknowledged, so strict mode remains unsupported.
 
-The controller separately records transport availability. Unreachability preserves
-last confirmed execution observations and exposes unresolved cleanup. Local startup
-reconciliation is optional; CLI discovery/plan/status open with recovery disabled,
-so a read-only command cannot dispatch an old pending intent. Explicit reconcile
-and submit still process already authorized intents.
+## Current provider reference
 
-## Qualification evidence
+The rendered Lambda API reference was read on 9 September 2026, OpenAPI 1.10.0.
+The implementation uses only Bearer-authenticated launch/list/get/terminate,
+explicit image IDs, ownership tags and existing firewall references. No obsolete
+quantity field, automatic retries, guest bootstrap commands or filesystem creation
+are sent. Jupyter tokens/URLs returned by the API are discarded before retention.
+Requests disable proxies/redirects, bound replies and run inside a 30-second parent
+wall deadline. Account API limits are spaced and reconciliation failures back off.
+Official references and remaining live gates are linked in LAMBDA.md.
 
-Verified on Linux/Python 3.12: **96 compute tests passed** (plus 20 subtest
-assertions), **56 selected legacy compatibility tests passed** (one CUDA skip),
-and **15 workflow backend tests passed**: **167 selected tests passed, one skipped**.
-Four installed-wheel journeys also passed; these re-exercise existing cases and
-are not added to that count. The installed modules were checked to come from the
-wheel target. SDK control tests use Modal 1.5.5 and boto3 1.43.90.
+## Retained-data compatibility
 
-The native checkpoint had 63 compute tests. This continuation adds 33 managed
-lifecycle, budget, S3/Modal artifact, real Runpod broker subprocess, SDK, batch and
-migration tests. Skill metadata validation, wheel/sdist building, exact compute
-source/guide package comparison and provider-extra metadata checks passed. The
-handoff's `verification.txt` and logs contain the exact commands and limits.
-The complete core suite, a clean dependency-resolution environment and remote CI
-matrix are not claimed.
+The controller transactionally upgrades journal versions 0–2 to **schema 3**, adding
+VM plans/grants/leases/events/attachments/job bindings and watchdog records. Existing
+payload bytes and integrity hashes are preserved. Unknown versions are rejected.
+Legacy local/native/managed execution bindings retain their canonical form.
 
-The compute suite includes both R0–R2 regression coverage and new cases in
-`test_remote.py`, `test_slurm.py`, `test_managed.py` and `test_modal.py`.
+New replay exports use `mk.compute-replay/2`, with declared external artifacts;
+inspection also accepts v1. Neither grants nor provider credentials are included.
+Inspection creates no journal or side effect, and historical status never establishes
+trust. A fresh execution still requires current runtime/policy identities and host
+authority. Runtime source upgrades do not silently reauthorize old plans.
 
-| Design case | Evidence in this checkpoint | Qualification limit |
-| --- | --- | --- |
-| SSH-01 | Actual OpenSSH client rejects empty and mismatched known-host files before sending a gateway command | Loopback Paramiko server; external OpenSSH daemon pending |
-| SSH-02 | Profile/path/schema injection rejection; fixed remote command; truncated input has no staging effect | Two registered self-contained DTOs only |
-| SSH-03 | Actual encrypted transport, reconnect, retained output, controller subprocess exit, duplicate acceptance | One Linux host simulates both sides; distributed failure modes pending |
-| SSH-04 | PID incarnation mismatch retains LOST; cancellation cannot kill an unrelated process | Native Linux ownership; Windows remote worker unsupported |
-| SSH-05 | Cancellation/deadline cleanup and unrelated-process survival; no host destruction API | Automatic deletion/retention not implemented |
-| SLURM-01 | No worker before allocation; simulator runs actual generated batch script and candidate passes local verification | Scheduler simulator, not a real Slurm daemon/cluster |
-| SLURM-02 | Missing queue/delayed accounting retain unknown allocation; no fabricated result | Site accounting configuration must be qualified |
-| SLURM-03 | scancel acknowledgement leaves ACTIVE until terminal accounting; scheduler UID/name filters inspected | Cluster cancellation races need live qualification |
-| SLURM-04 | Changed submit incarnation, duplicate rows and restart counts block ownership/admission; actual requeue entrypoint rejects execution | Single-job profile only; site-enforced no-requeue still required |
+Worker timing metadata is an untrusted diagnostic observation, separate from claims
+and evidence. Local supervisor telemetry is retained in its private spool; there is
+no new billing inference or admission path from those timestamps.
 
-Other new checks cover exact export approval scope, remote capacity/scope/path
-boundaries, expired start authority, bounded transport output/time, raw hostile
-candidate preservation, prior local canonical bytes and read-only startup.
-The previous local controller exit, process-tree cleanup, mathematical admission,
-concurrency, rollback and journal-integrity tests remain in the suite.
+## Verification
 
-The initial loopback SSH fixture closed its transport too early after sending the
-channel result. Waiting for the client to consume channel closure fixed the
-intermittent transfer failure. The server remains a test-only dependency; Paramiko
-is not installed by the compute extra or imported by the product. Required runtime
-native SSH uses the system OpenSSH client.
+The complete compute suite passed against the installed wheel with fresh resolved
+dependencies: **128 tests plus 20 subtest assertions**. Selected legacy compatibility
+tests passed **56**, with **one CUDA skip**; workflow backend tests passed **15**:
+**199 selected tests passed, one skipped**. The complete core suite and all 114
+design cases are not claimed. Exact commands/logs accompany the ZIP.
 
-No external compute account/host, live Slurm cluster, GPU, Windows/macOS controller,
-Apptainer image or full 114-case run was used. The CI Python matrix is defined but
-was not remotely executed in this session. Existing Studio UI/browser code did not
-change; no new browser qualification is claimed.
+Six clean environments passed dependency resolution, `pip check`, base mathematics,
+SDK version and installed-contract checks: base wheel, compute wheel, Modal extra,
+Runpod controller extra, Runpod worker extra, and rebuilt source distribution with
+compute. The environments had no checkout PYTHONPATH, inherited provider credentials
+or user site packages. Distribution scans rejected bytecode/private keys/runtime
+state. Installed runtime Python files matched current source byte for byte.
 
-## Managed design-case evidence
+Two packaged local measurement journeys also passed, including client close/reopen,
+retained output, independent verification and evidence-preserving result retrieval.
+These are separate qualification journeys, not added to the unit-test count.
+
+| Local operation | Handler including lazy imports | Local verification/admission | End-to-end |
+| --- | ---: | ---: | ---: |
+| Cuboid sweep, bound 50, full exact coverage | 0.656 ms | 160.628 ms | 1,729.143 ms |
+| Real convolution, supplied two-vector example | 739.110 ms | 212.225 ms | 2,355.411 ms |
+
+These are single observations on this runtime, not benchmarks across machines or
+calibrated percentiles. Interpreter startup dominates the small exact example.
+Queue/provisioning/network transfer are inapplicable to local direct dispatch.
+Full per-stage records, dependency freezes and limits are in qualification.json.
 
 | Design case | Local evidence | Remaining gate |
 | --- | --- | --- |
-| MODAL-01 | Real Modal 1.5.5 protobuf reattach/poll/tags/terminate with deserialization disabled; fixed adapter calls, bounded bridge and raw candidate tests | Live SDK/provider conformance and independent security review |
-| MODAL-02 | Explicit resource units/limits, network block, no secrets/ports; beta ID rejection | Live enforcement on the pinned runtime |
-| MODAL-03 | Candidate/terminal durability order, volume retrieval after simulated Sandbox exit | Live Volume v2 sync, controller loss and retention |
-| MODAL-04 | Physical-core conversion, equal request/hard limits; USD reservation separate from billing | Provider pricing/usage integration |
-| RUNPOD-01/02 | 404 retains unknown cleanup; durable S3 output is still locally verified; no replacement | Live queue/retention expiry and S3 recovery |
-| RUNPOD-03 | Millisecond execution/TTL policies; independent native runtime and start deadlines | Live queue timing and provider cancellation lag |
-| RUNPOD-04 | Original provider handle only; forged worker receipt cannot redirect cancellation; no endpoint mutation API | Live shared-endpoint qualification |
-| BATCH-01/03 | Duplicate delivery does not execute twice; unique shard identity and exact manifest checks; missing/duplicate/swap coverage stays explicit | No reducer or stochastic contribution engine advertised |
-| BATCH-02/04/05/06/07/08 | Unsupported replicate/checkpoint/cache fields are rejected; no bitwise/cross-workspace cache claim | Those subsystems remain unimplemented; these cases are not marked passed |
+| LAMBDA-01 | Lost launch acknowledgement, journal restart, unique ownership recovery and no duplicate launch; duplicate/missing ownership retains budget | Live account tag visibility/consistency and disconnected failure tests |
+| LAMBDA-02 | Unhealthy guest and terminating response retain unresolved resource/billing; only provider terminated state confirms release | Live termination latency and billing |
+| LAMBDA-03 | Strict refusal; prearmed watchdog on separate journal recovers after main client closes | Independently deployed host availability/failure-domain qualification |
+| LAMBDA-04 | Control key only enters dedicated API bridge; sanitized provider records and worker environment | Deployment credential isolation review |
+| LAMBDA-05 | Termination timeout retains exact UUID, restart observes pending termination without relaunch | Live provider cancellation/reconciliation behavior |
+| RELEASE-01/03 | Clean wheel/sdist installs, runtime schema/entrypoints/assets and artifact hygiene | Other OS/Python combinations and remote CI |
+| RELEASE-02 | Pinned SDK tests; remote profiles remain explicitly experimental | Live SDK/image/provider conformance |
+| RELEASE-04/05 | README/skill updates, strict schema catalog and replay negative/secret-sentinel tests | Broader user deployment review |
+| RELEASE-06 | Actual installed local per-stage measurements; no speedup or price claims | Authorized remote/GPU calibration |
 
-The batch review found and fixed an authority bug: child plans created a few
-milliseconds apart had later expiry times than the batch's earliest deadline.
-Child grants now inherit the parent's deadline, and dispatch checks the grant
-again before any provider call. Expired pending shards are rejected even when an
-active sibling occupies the concurrency slot, releasing their unexported reservation.
+No live SSH server outside this workspace, Slurm daemon, Lambda/Modal/Runpod/S3
+account, GPU or bill was used. The encrypted loopback SSH journey runs real gateway,
+worker and verifier subprocesses against a test-only server. Provider services and
+failure modes are deterministic fixtures. No Studio UI/browser changes are included.
 
-No live Modal, Runpod, AWS S3, paid GPU, external SSH host or Slurm cluster was used.
-Cloud service fixtures test protocol behavior; real subprocesses test mathematical
-execution and admission. SDK method tests use the actual pinned SDKs without
-provider credentials. None of these are a substitute for the deployment gates above.
+## Remaining work
 
-## Next work
-
-R7: explicit Lambda instance provisioning and generation-bound provider termination,
-with independently qualified cleanup/watchdog policy. Existing native SSH attachment
-is already separate from provisioning, but a native GPU profile is not yet supplied.
-R8: broader registered operations/artifact codecs, cache/checkpoint policies where
-applicable, Studio/MCP integration, complete provider conformance and release hardening.
-Continue external SSH/Slurm and Apptainer qualification in parallel with those gates
-when authorized hosts and credentials are available. No stable managed-provider or
-full-design completion claim is made by this checkpoint.
+Qualify actual remote deployments before promoting their profiles to stable. Native
+SSH GPU support, Apptainer, wider operation/artifact eligibility, Studio compute/MCP
+integration, caches/checkpoints, distributed algorithms and provider billing feeds
+remain explicit extensions. R8 hardening is not a claim that those extensions have
+been implemented. The core and local release can remain useful while remote
+configurations are experimental.

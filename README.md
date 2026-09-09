@@ -6,7 +6,7 @@
 
 Mathematical results carry an explicit **trust level**, an **engine** tag, and a **derivation trail**. Exact computation, checked certificates, symbolic results, certified enclosures, empirical evidence, and formal proofs are distinct claims. Exact arithmetic alone is not a formal proof; approximate-input ancestry must not silently disappear.
 
-[![version](https://img.shields.io/badge/version-1.4.0.dev3-blue)]()
+[![version](https://img.shields.io/badge/version-1.4.0.dev4-blue)]()
 [![python](https://img.shields.io/badge/python-%3E%3D3.11-blue)]()
 [![engines](https://img.shields.io/badge/engines-sympy%20%C2%B7%20z3%20%C2%B7%20lean%20%C2%B7%20numba%20%C2%B7%20cuda-orange)]()
 [![license](https://img.shields.io/badge/license-MIT-lightgrey)]()
@@ -914,6 +914,8 @@ existing Linux SSH hosts and native single-job Slurm execution for bounded
 Pythagorean-pair sweeps and numerical convolution. Optional experimental adapters
 add Modal Sandboxes and existing Runpod queue endpoints, with explicit GPU selection
 for the registered integer sweep and bounded independent batches on Runpod/local CPU.
+An experimental Lambda lease controller adds separately authorized VM provisioning,
+authenticated native SSH attachment and independently installed watchdog cleanup.
 
 Plans freeze inputs, runtime identity and policy. A trusted local host authorizes
 one attempt; submission and cleanup intent are journaled before process effects.
@@ -927,9 +929,13 @@ SSH/Slurm require pinned operator profiles and explicit approval to export the
 exact bundle. Managed providers additionally require a scoped paid grant and shared
 USD reservations; unknown outcomes retain exposure. Results use durable user-owned
 storage, and cancelling one job never deletes an existing endpoint. Live cloud/GPU
-qualification, Apptainer and VM provisioning remain outstanding. Existing Python/MCP jobs and Studio
-workflows retain their behavior. See the [compute guide](src/mathkernel_compute/README.md)
-and [managed-provider setup](src/mathkernel_compute/MANAGED.md) for supported contracts,
+qualification and Apptainer remain outstanding. Lambda strict cleanup mode refuses
+provisioning without a qualified expiry guarantee; managed exposure is an explicit
+opt-in. Existing Python/MCP jobs and Studio workflows retain their behavior. See the
+[compute guide](src/mathkernel_compute/README.md),
+[managed-provider setup](src/mathkernel_compute/MANAGED.md),
+[owned-VM setup](src/mathkernel_compute/LAMBDA.md) and
+[release qualification](src/mathkernel_compute/RELEASE.md) for supported contracts,
 explicit CLI actions, recovery and operational limits.
 
 ## MathKernel Studio

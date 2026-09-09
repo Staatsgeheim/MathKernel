@@ -1,0 +1,1 @@
+{"operation":"signal_convolve","parameters":{"left":["1.5","2.5"],"right":["2","-1"]},"required_claim":"numeric_convolution"}

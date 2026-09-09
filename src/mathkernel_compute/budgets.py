@@ -23,11 +23,15 @@ def reserve(journal, binding):
 
 
 def settle(journal, job_id, amount, source, *, retained_storage_accounted):
+    return settle_resource(journal, job_id, journal.get('jobs', job_id)['resources'], amount, source,
+                           retained_storage_accounted=retained_storage_accounted)
+
+
+def settle_resource(journal, job_id, resources, amount, source, *, retained_storage_accounted):
     amount = parse(Money, canonical(amount))
     if amount.currency != 'USD' or Decimal(amount.amount) > Decimal('1000000000000') or not retained_storage_accounted or not isinstance(source, str) or not 1 <= len(source) <= 512:
         raise ValueError('Explicit native USD cost and retained storage accounting required')
-    job = journal.get('jobs', job_id)
-    if job['resources'] not in {'RELEASE_CONFIRMED', 'NOT_OWNED'}:
+    if resources not in {'RELEASE_CONFIRMED', 'NOT_OWNED'}:
         raise PermissionError('RESOURCE_EXPOSURE_UNRESOLVED')
     reservation = journal.get('budget_reservations', job_id)
     if not reservation.get('budget_id'):

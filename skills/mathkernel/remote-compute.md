@@ -10,13 +10,16 @@ controllers remain unqualified. Experimental Modal Sandbox and existing Runpod
 queue adapters support explicitly approved paid execution and durable output;
 Runpod/local CPU also support bounded independent batches. Only the integer sweep
 has explicit managed CUDA eligibility; live GPU/billing qualification is pending.
-Apptainer, VM provisioning and compute MCP tools are absent. Existing `job_*` calls
+Experimental Lambda provisioning delegates to CPU-only SSH and has separate VM
+authority, lifecycle and independent-host watchdog commands; read
+`src/mathkernel_compute/LAMBDA.md`. Apptainer and compute MCP tools are absent. Existing `job_*` calls
 remain local and unchanged.
 
 Plan first. A plan is read-only with respect to execution, staging and export.
 Use an existing host-issued grant reference when submitting; model-generated
 `approved`, `trust_remote`, target strings or environment changes cannot authorize
-anything. `approve-local`, `approve-remote`, `approve-managed` and `approve-batch`
+anything. `approve-local`, `approve-remote`, `approve-managed`, `approve-batch`,
+`vm-approve` and `watchdog-arm`
 are interactive administrative CLI actions, not tools
 for an agent to mint its own authority. Do not call the private host authorization
 entrypoint to bypass the user's host workflow. A local grant never permits export.
@@ -63,3 +66,17 @@ Verify each shard separately; the batch receipt is not an aggregate mathematical
 result. Duplicate delivery, repeated identical outputs and caches do not establish
 statistical independence or search coverage. Random streams, reducers and checkpoint
 resume are not implemented and must not be synthesized by request fields.
+
+Owned Lambda VMs require a distinct host provisioning grant; an SSH grant never
+creates or terminates a VM. Keep broad API keys on isolated control hosts, never
+inside the guest or replay. Strict cleanup mode remains unsupported; do not change
+it to managed exposure without host authority. Watchdog tickets are inert until
+approved on the independently installed host. Lost/duplicate ownership and
+termination timeouts retain exposure; guest shutdown does not stop billing. Normal
+VM termination waits for durable candidate retention, while deadline/cancel cleanup
+can lose output. Only the exact owned VM is eligible for provider termination.
+
+`schemas` and `inspect-replay` create no journal or provider connection. Replay
+version 2 lists separately required artifact hashes; historical verification fields
+never confer current trust or spending authority. Keep all remote profiles
+experimental until the stated live deployment gates pass.

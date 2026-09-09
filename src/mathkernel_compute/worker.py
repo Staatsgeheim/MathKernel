@@ -55,16 +55,21 @@ def run():
     resource.setrlimit(resource.RLIMIT_FSIZE, (ceiling, ceiling))
     if attempt.start_deadline_ms is not None and time.time_ns() // 1_000_000 >= attempt.start_deadline_ms:
         raise SystemExit(42)
+    operation_started = time.monotonic_ns()
     output = execute(attempt.spec.bundle.request)
+    operation_finished = time.monotonic_ns()
     envelope = RemoteResultEnvelope(attempt_id=attempt.attempt_id, workspace_id=attempt.workspace_id,
         execution_digest=attempt.execution_digest, bundle_digest=attempt.bundle_digest,
         operation=attempt.spec.bundle.request.operation,
         output_schema=OPERATIONS[attempt.spec.bundle.request.operation]['output_schema'], output=output,
-        worker_claims={'engine': attempt.spec.bundle.request.parameters.engine})
+        worker_claims={'engine': attempt.spec.bundle.request.parameters.engine,
+            'timing_observation': {'operation_started_ns': str(operation_started),
+                                   'operation_finished_ns': str(operation_finished)}})
     write_frame(sys.stdout.buffer, envelope, ceiling-4)
 
 
 def supervise(directory, *, slurm=False):
+    supervisor_started = time.monotonic_ns()
     directory = Path(directory).resolve()
     attempt = parse(AttemptRecord, bounded_read(directory / 'request.json'))
     if slurm:
@@ -84,6 +89,7 @@ def supervise(directory, *, slurm=False):
     atomic_write(directory / 'owner.json', canonical({'attempt_id': attempt.attempt_id,
         'execution_digest': attempt.execution_digest, 'pid': os.getpid(), 'starttime': process_identity(os.getpid())}))
     process = None
+    child_launch = None
     outcome, message = 'FAILED', 'Worker failed before producing a complete envelope.'
     resources = 'RELEASE_CONFIRMED'
     try:
@@ -94,6 +100,7 @@ def supervise(directory, *, slurm=False):
             outcome, message = 'CANCELLED', 'Cancelled before worker launch.'
         else:
             with open(directory / 'stdout.frame', 'w+b') as output:
+                child_launch = time.monotonic_ns()
                 process = subprocess.Popen([sys.executable, '-m', 'mathkernel_compute.worker', 'run'],
                     stdin=subprocess.PIPE, stdout=output, stderr=subprocess.DEVNULL,
                     start_new_session=True, close_fds=True, env=worker_environment())
@@ -126,11 +133,18 @@ def supervise(directory, *, slurm=False):
     except Exception as exc:
         message = type(exc).__name__ + ': ' + str(exc)[:500]
     finally:
+        cleanup_started = time.monotonic_ns()
         if process is not None:
             try:
                 terminate_owned(process)
             except (OSError, subprocess.TimeoutExpired):
                 resources = 'CLEANUP_UNKNOWN'
+        # Local diagnostic telemetry, not evidence or billing. Absolute monotonic
+        # timestamps are strings (nanoseconds can exceed JSON's safe integer range).
+        atomic_write(directory / 'timing.json', canonical({'schema': 'mk.local-timing/1',
+            'supervisor_started_ns': str(supervisor_started),
+            'child_launch_ns': str(child_launch) if child_launch is not None else None,
+            'cleanup_started_ns': str(cleanup_started), 'cleanup_finished_ns': str(time.monotonic_ns())}))
         atomic_write(directory / 'terminal.json', canonical({'execution': outcome, 'resources': resources,
             'revision': 2, 'attempt_id': attempt.attempt_id, 'execution_digest': attempt.execution_digest,
             'message': message}))

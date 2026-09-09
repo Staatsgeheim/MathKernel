@@ -43,7 +43,7 @@ def serialized(method):
 
 
 class ComputeClient:
-    def __init__(self, *, state_dir, kernel=None, policy=None, remote_targets=(), managed_targets=(), budget_limits=(), reconcile_on_open=True, _executor=None, _managed_call=None):
+    def __init__(self, *, state_dir, kernel=None, policy=None, remote_targets=(), managed_targets=(), budget_limits=(), lambda_profiles=(), reconcile_on_open=True, _executor=None, _managed_call=None, _lambda_http=None):
         self._coordinator_lock = threading.RLock()
         self.kernel = kernel  # No remote method is added to the facade.
         self.policy = policy or LocalPolicy()
@@ -65,6 +65,8 @@ class ComputeClient:
         self.executor = _executor or LocalExecutor(self.root / 'attempt-spool')
         self.closed = False
         try:
+            from .provisioning import LambdaProvisioner
+            self.vm = LambdaProvisioner(self, lambda_profiles, _http=_lambda_http)
             with self.journal.transaction():
                 try:
                     self.workspace_id = self.journal.get('identity', 'workspace')['workspace_id']
@@ -145,7 +147,12 @@ class ComputeClient:
                 raise RemoteUnavailable('PINNED_TARGET_UNAVAILABLE_OR_CHANGED')
         except OSError as exc:
             raise RemoteUnavailable('PINNED_TARGET_UNAVAILABLE_OR_CHANGED') from exc
-        return SSHExecutor(profile)
+        executor = SSHExecutor(profile)
+        attachment = self.vm.attachment(attempt.spec)
+        if attachment:
+            from .provisioning import OwnedSSHExecutor
+            return OwnedSSHExecutor(executor, self.vm, attachment)
+        return executor
 
     @serialized
     def plan(self, request: ComputeRequest):
@@ -209,10 +216,15 @@ class ComputeClient:
                 'CPU and memory requests and limits are equal; provider billing and volume retention remain separate.',
                 'Strict scientific network isolation is unsupported on Runpod; only the registered worker broker uses artifact egress.'
                     if managed_profile.adapter == 'runpod' else 'Sandbox egress is blocked; Volume v2 sync persists output.')
+        if profile and (profile.target_id in self.vm.profiles or any(
+                a['target'] == profile.target_id for a in self.journal.all('vm_attachments'))):
+            warnings = tuple(w for w in warnings if not w.startswith('Existing unmetered host')) + (
+                'Job-owned Lambda VM: spending is reserved and reconciled on its separate VM lease.',
+                'One SSH job per lease; VM deadline can terminate the instance and discard unretrieved output.',)
         plan = ComputePlan(plan_id=identifier('plan'), workspace_id=self.workspace_id, created_ms=now_ms(),
             expires_ms=min(now_ms() + self.policy.plan_lifetime_ms, managed_profile.quote.valid_until_ms) if managed_profile else now_ms() + self.policy.plan_lifetime_ms, spec=spec, execution_digest=digest(spec),
             provider_cost=managed_profile.quote.reservation if managed_profile else None if remote else Money(),
-            warnings=warnings, rejected_targets=('Unconfigured providers, VM provisioning, Apptainer and automatic remote selection are unavailable.',))
+            warnings=warnings, rejected_targets=('Automatic provisioning/remote selection and unconfigured providers are unavailable; owned VMs require separate explicit authority.',))
         return plan
 
     def _store_plan(self, plan):
@@ -247,6 +259,7 @@ class ComputeClient:
             profile = self.remote_targets.get(plan.spec.target)
             if profile is None or profile.profile_digest != plan.spec.remote.target_profile_digest:
                 raise PermissionError('TARGET_PROFILE_CHANGED')
+            self.vm.check_execution(plan.spec)
 
     @serialized
     def _authorize_local(self, plan_id, *, subject='local-user'):
@@ -335,9 +348,12 @@ class ComputeClient:
             raise ValueError('JOURNAL_CAPACITY')
         # Unresolved cleanup retains the concurrency reservation.
         active = sum(j['resources'] not in {'RELEASE_CONFIRMED', 'NOT_OWNED'} for j in jobs)
+        if plan.spec.managed:
+            active += sum(v['resources'] not in {'RELEASE_CONFIRMED', 'NOT_OWNED'} for v in self.journal.all('vm_leases'))
         if batch_binding is None and active >= self.policy.max_concurrent_jobs:
             raise PermissionError('CONCURRENCY_LIMIT')
         job_id, attempt_id = identifier('job'), identifier('attempt')
+        self.vm.bind_job(plan.spec, job_id)
         attempt = AttemptRecord(attempt_id=attempt_id, execution_digest=plan.execution_digest,
             bundle_digest=plan.spec.bundle_digest, workspace_id=self.workspace_id, spec=plan.spec,
             start_deadline_ms=grant.expires_ms if plan.spec.endpoint or batch_binding else None, batch=batch_binding)
@@ -437,6 +453,8 @@ class ComputeClient:
                     continue
                 active = sum(j['resources'] not in {'RELEASE_CONFIRMED', 'NOT_OWNED'} and
                     self.journal.get('outbox', j['attempt_id'])['state'] != 'PENDING' for j in self.journal.all('jobs'))
+                if attempt.spec.managed:
+                    active += sum(v['resources'] not in {'RELEASE_CONFIRMED', 'NOT_OWNED'} for v in self.journal.all('vm_leases'))
                 if active >= self.policy.max_concurrent_jobs:
                     continue
                 with self.journal.transaction():
@@ -829,8 +847,8 @@ class ComputeClient:
     def export_replay(self, job_id):
         job = self._job(job_id)
         # Data only: no grant, shell command, credentials, absolute paths or automatic replay.
-        return canonical({'schema': 'mk.compute-replay/1', 'plan': self._plan(job['plan_id']).model_dump(mode='json'),
-                          'attempt': self._attempt(job).model_dump(mode='json'), 'status': self.status(job_id).model_dump(mode='json')})
+        from .replay import export_replay
+        return export_replay(self._plan(job['plan_id']), self._attempt(job), self.status(job_id))
 
     def close(self):
         if not self.closed:

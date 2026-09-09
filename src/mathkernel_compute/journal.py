@@ -10,7 +10,8 @@ from .protocol import canonical, decode
 TABLES = frozenset({'jobs', 'attempts', 'plans', 'execution_specs', 'events', 'artifact_manifests',
     'artifact_refs', 'verification_reports', 'resource_leases', 'budget_grants',
     'budget_reservations', 'usage_entries', 'outbox', 'identity', 'provider_handles',
-    'provider_observations', 'budget_settlements', 'batch_plans', 'batch_grants', 'batches'})
+    'provider_observations', 'budget_settlements', 'batch_plans', 'batch_grants', 'batches',
+    'vm_plans', 'vm_grants', 'vm_leases', 'vm_attachments', 'vm_jobs', 'vm_events', 'watchdog_leases'})
 
 
 class ComputeJournal:
@@ -37,7 +38,7 @@ class ComputeJournal:
             self.db.execute('PRAGMA synchronous=FULL')
             with self.transaction():
                 version = self.db.execute('PRAGMA user_version').fetchone()[0]
-                if version not in (0, 1, 2):
+                if version not in (0, 1, 2, 3):
                     raise ValueError('JOURNAL_SCHEMA_UNSUPPORTED')
                 for table in sorted(TABLES):
                     self.db.execute(f'CREATE TABLE IF NOT EXISTS {table} '
@@ -48,7 +49,9 @@ class ComputeJournal:
                                 "(json_extract(value,'$.job_id'), json_extract(value,'$.attempt_number'))")
                 self.db.execute("CREATE UNIQUE INDEX IF NOT EXISTS provider_incarnation ON provider_handles "
                                 "(json_extract(value,'$.adapter_scope'), json_extract(value,'$.handle'))")
-                self.db.execute('PRAGMA user_version=2')
+                self.db.execute("CREATE UNIQUE INDEX IF NOT EXISTS vm_request ON vm_leases "
+                                "(json_extract(value,'$.workspace_id'), json_extract(value,'$.client_request_id'))")
+                self.db.execute('PRAGMA user_version=3')
         except BaseException:
             self.db.close(); self.owner.close()
             raise

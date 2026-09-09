@@ -425,7 +425,7 @@ def test_journal_v1_upgrade_retains_existing_local_identity(tmp_path):
         original = canonical(c.journal.get('plans', plan.plan_id))
         c.journal.db.execute('PRAGMA user_version=1')
     with ComputeClient(state_dir=tmp_path, reconcile_on_open=False) as c:
-        assert c.journal.db.execute('PRAGMA user_version').fetchone()[0] == 2
+        assert c.journal.db.execute('PRAGMA user_version').fetchone()[0] == 3
         assert canonical(c.journal.get('plans', plan.plan_id)) == original
         assert c.journal.all('provider_handles') == []
 
