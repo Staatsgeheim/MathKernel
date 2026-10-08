@@ -1,0 +1,38 @@
+{
+  "source": {
+    "claim_id": "fixture-a",
+    "conclusion": {"kind": "boolean", "value": true},
+    "regularity": [
+      {
+        "subject": "u",
+        "regularity": {"kind": "symbol", "value": "C"},
+        "order": {
+          "kind": "operator",
+          "operator": "add",
+          "arguments": [
+            {"kind": "symbol", "value": "m"},
+            {"kind": "integer", "value": 4}
+          ]
+        }
+      }
+    ]
+  },
+  "formal": {
+    "claim_id": "fixture-a-formal",
+    "conclusion": {"kind": "boolean", "value": true},
+    "regularity": [
+      {
+        "subject": "u",
+        "regularity": {"kind": "symbol", "value": "C"},
+        "order": {
+          "kind": "operator",
+          "operator": "add",
+          "arguments": [
+            {"kind": "symbol", "value": "m"},
+            {"kind": "integer", "value": 5}
+          ]
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "source": {
+    "claim_id": "fixture-c",
+    "conclusion": {"kind": "symbol", "value": "P"},
+    "measure_scope": {
+      "kind": "almost_everywhere",
+      "variable": "t",
+      "measure": {"kind": "symbol", "value": "mu"}
+    }
+  },
+  "formal": {
+    "claim_id": "fixture-c-formal",
+    "conclusion": {"kind": "symbol", "value": "P"},
+    "measure_scope": {
+      "kind": "pointwise",
+      "variable": "t"
+    }
+  }
+}

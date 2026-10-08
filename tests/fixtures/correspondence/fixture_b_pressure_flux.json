@@ -1,0 +1,45 @@
+{
+  "source": {
+    "claim_id": "fixture-b",
+    "conclusion": {
+      "kind": "operator",
+      "operator": "le",
+      "arguments": [
+        {"kind": "symbol", "value": "flux"},
+        {
+          "kind": "operator",
+          "operator": "pow",
+          "arguments": [
+            {"kind": "symbol", "value": "R"},
+            {"kind": "rational", "value": "-3/4"}
+          ]
+        }
+      ]
+    },
+    "parameter_dependencies": [
+      {"quantity": "C", "depends_on": ["B_R"]}
+    ]
+  },
+  "formal": {
+    "claim_id": "fixture-b-formal",
+    "conclusion": {
+      "kind": "operator",
+      "operator": "le",
+      "arguments": [
+        {"kind": "symbol", "value": "flux"},
+        {
+          "kind": "operator",
+          "operator": "pow",
+          "arguments": [
+            {"kind": "symbol", "value": "R"},
+            {"kind": "rational", "value": "-7/4"}
+          ]
+        }
+      ]
+    },
+    "parameter_dependencies": [
+      {"quantity": "C", "depends_on": ["B_R"]},
+      {"quantity": "C", "depends_on": ["A_R"]}
+    ]
+  }
+}

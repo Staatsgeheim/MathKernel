@@ -23,6 +23,24 @@ physical system, or Millennium problem. Report JSON is an execution record, not
 a signed artifact or a self-authenticating certificate. Parsing supplied report
 JSON is not a replay operation.
 
+## Semantic correspondence
+
+`mathkernel.formal_audit.correspondence` compares a reviewed source contract
+with a data-only contract extracted from a pinned Lean declaration. The source
+document, excerpt, transcription, manifest, mapping, formal source, target,
+toolchain, extractor and normalized contracts are content-bound in the report.
+Field-level findings cover quantifiers, hypotheses, domains, conclusions,
+regularity, dependencies, norms/spaces, measure scope and definedness.
+
+Only a reviewed manifest may enter the checked path. Candidate or opaque
+material remains incomplete, and missing mappings or unresolved definedness
+obligations fail closed. Even a matched report establishes only
+`contract_alignment = established_relative_to_manifest`;
+`semantic_alignment = not_established` is invariant. Operator-authorized
+extraction is available through Python and `mathkernel-formal-audit correspond`,
+not MCP. Use `--inspection-only` to validate and fingerprint a manifest without
+running Lean.
+
 ## Read-only inspection
 
 ```python

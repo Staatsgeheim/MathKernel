@@ -98,9 +98,12 @@ def run_bounded(command: list[str], *, cwd: Path, env: dict[str, str],
         except subprocess.TimeoutExpired: proc.kill()
         for thread in threads: thread.join(timeout=1)
     if overflow.is_set(): status = "output_limit"
+    def decoded(buffer):
+        # Stable text receipts use LF regardless of the child platform.
+        return bytes(buffer).decode("utf-8", errors="replace").replace("\r\n", "\n").replace("\r", "\n")
     return {"status": status, "returncode": proc.returncode,
-            "stdout": bytes(buffers[0]).decode("utf-8", errors="replace"),
-            "stderr": bytes(buffers[1]).decode("utf-8", errors="replace"),
+            "stdout": decoded(buffers[0]),
+            "stderr": decoded(buffers[1]),
             "elapsed_seconds": time.monotonic() - start}
 
 

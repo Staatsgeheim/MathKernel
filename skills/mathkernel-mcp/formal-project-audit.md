@@ -24,3 +24,9 @@ There is deliberately **no** `math_formal_project_verify` MCP tool, arbitrary
 binary selector, implicit installation, or execution-authorization tool. Actual
 replay is a trusted-operator CLI/Python operation with a reviewed independent
 reference. See the [complete guide](../mathkernel/formal-project-audit.md).
+
+Semantic-correspondence extraction and comparison are likewise outside the MCP
+surface. MCP cannot supply extractor binaries, authorize Lean execution, or
+promote a reviewed contract to natural-language semantic alignment. Produce
+correspondence reports through the operator-authorized Python/CLI path; the
+report's `semantic_alignment` remains `not_established`.

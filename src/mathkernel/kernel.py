@@ -426,6 +426,22 @@ class MathKernel:
                 handler="kernel:" + operation, parameter_schema=schema,
                 description="Read-only inspection / unexecuted diagnostic. Never proof evidence; replay is operator-only.",
             ))
+        self.router.registry.register(Capability(
+            name="formal_correspondence.inspect",
+            domain="formal_correspondence",
+            operation="formal_correspondence_inspect",
+            input_types=("CorrespondenceManifest",),
+            output_types=("CorrespondenceReport",),
+            engines=("formal_audit",),
+            evidence=("unknown", "manifest_inspection"),
+            handler="kernel:formal_correspondence_inspect",
+            parameter_schema={
+                "manifest": "string",
+                "document_path": "string?",
+                "excerpt_path": "string?",
+            },
+            description="Read-only manifest/source binding; never runs Lean or establishes alignment.",
+        ))
         complex_result_types = {
             "argument_principle": "ArgumentPrincipleResult",
             "analytic_continuation": "AnalyticContinuationResult",
@@ -997,7 +1013,7 @@ class MathKernel:
             "capability_registry": self.router.registry.manifest(),
             "operations": ["parse", "parse_latex", "get", "substitute", "analyze", "infer_structure",
                            "object_create", "object_get", "apply", "capability_query", "result_resource_get",
-                           "formal_project_audit", "formal_project_probe",
+                           "formal_project_audit", "formal_project_probe", "formal_correspondence_inspect",
                            "plan", "plan_get", "execute_plan", "reason", "execution_get",
                            "simplify", "solve", "solve_system",
                            "differentiate", "integrate", "limit", "series", "summation", "product",
@@ -4085,6 +4101,62 @@ class MathKernel:
         except (ValueError, TypeError) as exc:
             return MathResult(ok=False, status="error", trust=TrustLevel.UNKNOWN,
                               engine="formal_audit", errors=[str(exc)])
+
+    def formal_correspondence_inspect(
+        self,
+        manifest: str,
+        *,
+        document_path: str | None = None,
+        excerpt_path: str | None = None,
+    ) -> MathResult:
+        """Validate and fingerprint a correspondence manifest without running Lean."""
+        from .formal_audit.correspondence import (
+            correspondence_evidence_bundle,
+            inspection_report,
+            load_manifest,
+            verify_source_files,
+        )
+        try:
+            loaded = load_manifest(manifest)
+            binding = None
+            if document_path is not None or excerpt_path is not None:
+                if document_path is None or excerpt_path is None:
+                    raise ValueError("document_path and excerpt_path must be supplied together")
+                binding = verify_source_files(
+                    loaded.manifest,
+                    document_path=document_path,
+                    excerpt_path=excerpt_path,
+                )
+            report = inspection_report(loaded, source_binding=binding)
+            evidence_bundle = correspondence_evidence_bundle(report)
+        except (ValueError, OSError, TypeError) as exc:
+            return MathResult(
+                ok=False,
+                status="error",
+                trust=TrustLevel.UNKNOWN,
+                engine="formal_correspondence",
+                errors=[str(exc)],
+            )
+        step = self._record(DerivationStep(
+            step_id=self._id("step"),
+            operation="formal_correspondence_inspect",
+            inputs=[report.source_manifest_sha256],
+            output=report.status,
+            engine="formal_correspondence",
+            trust=TrustLevel.UNKNOWN,
+            evidence_bundle=evidence_bundle,
+            conditions=list(report.limitations),
+        ))
+        return MathResult(
+            ok=True,
+            status="unknown",
+            data=report.model_dump(mode="json"),
+            engine="formal_correspondence",
+            trust=TrustLevel.UNKNOWN,
+            evidence_bundle=evidence_bundle,
+            derivation=[step],
+            warnings=list(report.limitations),
+        )
 
     def formal_project_verify(self, request: dict, *, authorize_execution: bool = False) -> MathResult:
         """Operator-only replay; not exposed through MCP, jobs, or the planner registry."""

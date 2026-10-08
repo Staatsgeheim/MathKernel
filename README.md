@@ -6,7 +6,7 @@
 
 Mathematical results carry an explicit **trust level**, an **engine** tag, and a **derivation trail**. Exact computation, checked certificates, symbolic results, certified enclosures, empirical evidence, and formal proofs are distinct claims. Exact arithmetic alone is not a formal proof; approximate-input ancestry must not silently disappear.
 
-[![version](https://img.shields.io/badge/version-1.3.1.dev3-blue)]()
+[![version](https://img.shields.io/badge/version-1.3.1.dev4-blue)]()
 [![python](https://img.shields.io/badge/python-%3E%3D3.11-blue)]()
 [![engines](https://img.shields.io/badge/engines-sympy%20%C2%B7%20z3%20%C2%B7%20lean%20%C2%B7%20numba%20%C2%B7%20cuda-orange)]()
 [![license](https://img.shields.io/badge/license-MIT-lightgrey)]()
@@ -434,10 +434,19 @@ specified Lean statements and axiom policy; mathematical paper/definition
 alignment remains a separate obligation. **Live external-checker qualification
 is still pending**; mocked runner tests are not proof verification.
 
+The semantic-correspondence audit compares a human-reviewed, content-bound
+claim manifest with a contract extracted from a pinned Lean declaration. It
+reports binders, hypotheses, domains, conclusions, regularity, dependencies,
+measure scope and definedness separately. A successful comparison establishes
+only `contract_alignment = established_relative_to_manifest`;
+`semantic_alignment` always remains `not_established`. Extraction is available
+only through the explicitly authorized Python/CLI path; inspection-only mode
+validates and fingerprints a manifest without running Lean.
+
 MCP exposes only read-only `math_formal_project_audit` and
 `math_formal_project_probe`. Local project access is disabled unless the operator
 sets `MATHKERNEL_FORMAL_PROJECT_ROOTS` before startup. Clients cannot enable replay
-or change checker binaries through these tools.
+or correspondence extraction, or change checker binaries through these tools.
 
 `certified_enclose` evaluates coefficients and endpoint expressions directly in
 an isolated `mpmath.iv` context, without point-rounding them first. Approximate

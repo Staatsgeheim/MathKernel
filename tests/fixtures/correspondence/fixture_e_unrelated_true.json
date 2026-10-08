@@ -1,0 +1,18 @@
+{
+  "source": {
+    "claim_id": "fixture-e",
+    "conclusion": {
+      "kind": "apply",
+      "operator": "SourcePredicate",
+      "arguments": [{"kind": "boolean", "value": true}]
+    }
+  },
+  "formal": {
+    "claim_id": "fixture-e-formal",
+    "conclusion": {
+      "kind": "apply",
+      "operator": "UnrelatedPredicate",
+      "arguments": [{"kind": "boolean", "value": true}]
+    }
+  }
+}

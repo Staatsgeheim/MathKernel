@@ -1,0 +1,61 @@
+{
+  "source": {
+    "claim_id": "fixture-d",
+    "conclusion": {"kind": "boolean", "value": true},
+    "definitions": [
+      {
+        "symbol": "leastWitness",
+        "expression": {
+          "kind": "apply",
+          "operator": "Nat.sInf",
+          "arguments": [{"kind": "symbol", "value": "witnesses"}]
+        }
+      }
+    ],
+    "definedness_obligations": [
+      {
+        "obligation_id": "witnesses.nonempty",
+        "category": "nonempty",
+        "expression": {"kind": "symbol", "value": "witnesses"},
+        "required": true
+      }
+    ]
+  },
+  "formal_unresolved": {
+    "claim_id": "fixture-d-formal",
+    "conclusion": {"kind": "boolean", "value": true},
+    "definitions": [
+      {
+        "symbol": "leastWitness",
+        "expression": {
+          "kind": "apply",
+          "operator": "Nat.sInf",
+          "arguments": [{"kind": "symbol", "value": "witnesses"}]
+        }
+      }
+    ]
+  },
+  "formal_discharged": {
+    "claim_id": "fixture-d-formal",
+    "conclusion": {"kind": "boolean", "value": true},
+    "definitions": [
+      {
+        "symbol": "leastWitness",
+        "expression": {
+          "kind": "apply",
+          "operator": "Nat.sInf",
+          "arguments": [{"kind": "symbol", "value": "witnesses"}]
+        }
+      }
+    ],
+    "definedness_obligations": [
+      {
+        "obligation_id": "formal.witnesses.nonempty",
+        "category": "nonempty",
+        "expression": {"kind": "symbol", "value": "witnesses"},
+        "required": true,
+        "justification": "Mapped formal hypothesis proves Set.Nonempty witnesses."
+      }
+    ]
+  }
+}
